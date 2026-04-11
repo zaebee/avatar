@@ -1,75 +1,76 @@
-name: Deploy to Yandex Cloud
-
 on:
   push:
-    branches:
-      - main
-    paths:
-      - 'terraform/**'
-      - 'cloud-function/**'
-      - 'asi-one-worker/**'
+    - workflows: [deploy-yandex]
+      filter:
+        branches: [main]
+        paths: [terraform/**, cloud-function/**, asi-one-worker/**]
 
-jobs:
-  deploy:
-    runs-on: ubuntu-latest
-    timeout-minutes: 30
-    
-    steps:
-      - uses: actions/checkout@v4
-      
-      - name: Setup Yandex Cloud CLI
-        run: |
-          curl -sSL https://storage.yandexcloud.net/yandexcloud-yc/release/install.sh | bash -s -- -n
-          export PATH="$PATH:$HOME/yandex-cloud/bin"
-          yc version
-      
-      - name: Configure YC
-        run: |
-          export PATH="$PATH:$HOME/yandex-cloud/bin"
-          yc config set token ${YC_TOKEN}
-          yc config set folder-id ${YC_FOLDER_ID}
-          yc config set cloud-id ${YC_CLOUD_ID}
-        env:
-          YC_TOKEN: ${{ secrets.YC_TOKEN }}
-          YC_FOLDER_ID: ${{ secrets.YC_FOLDER_ID }}
-          YC_CLOUD_ID: ${{ secrets.YC_CLOUD_ID }}
-      
-      - name: Create Cloud Function packages
-        run: |
-          cd cloud-function
-          zip -r function.zip . -x "*.pyc" "__pycache__/*"
-          mv function.zip ../terraform/
-          
-          cd ../asi-one-worker
-          zip -r function.zip . -x "*.pyc" "__pycache__/*"
-          mv function.zip ../terraform/
-      
-      - name: Terraform Init
-        run: cd terraform && terraform init
-        env:
-          TF_VAR_token: ${{ secrets.YC_TOKEN }}
-          TF_VAR_imap_password: ${{ secrets.IMAP_PASSWORD }}
-          TF_VAR_shared_secret: ${{ secrets.SHARED_SECRET }}
-          TF_VAR_asi_one_key: ${{ secrets.ASI_ONE_KEY }}
-      
-      - name: Terraform Validate
-        run: cd terraform && terraform validate
-      
-      - name: Terraform Plan
-        run: |
-          cd terraform && terraform plan
-        env:
-          TF_VAR_token: ${{ secrets.YC_TOKEN }}
-          TF_VAR_imap_password: ${{ secrets.IMAP_PASSWORD }}
-          TF_VAR_shared_secret: ${{ secrets.SHARED_SECRET }}
-          TF_VAR_asi_one_key: ${{ secrets.ASI_ONE_KEY }}
-      
-      - name: Terraform Apply
-        run: |
-          cd terraform && terraform apply -auto-approve
-        env:
-          TF_VAR_token: ${{ secrets.YC_TOKEN }}
-          TF_VAR_imap_password: ${{ secrets.IMAP_PASSWORD }}
-          TF_VAR_shared_secret: ${{ secrets.SHARED_SECRET }}
-          TF_VAR_asi_one_key: ${{ secrets.ASI_ONE_KEY }}
-        if: github.ref == 'refs/heads/main'
+workflows:
+  deploy-yandex:
+    tasks:
+      - terraform-deploy
+
+tasks:
+  - name: terraform-deploy
+    cubes:
+      - name: setup-yc
+        image: docker.io/library/alpine:latest
+        script:
+          - apk add --no-cache curl wget git unzip
+          - curl -sSL https://storage.yandexcloud.net/yandexcloud-yc/release/install.sh | sh
+          - export PATH="$HOME/yandex-cloud/bin:$PATH"
+          - yc version
+
+      - name: configure-yc
+        script:
+          - export PATH="$HOME/yandex-cloud/bin:$PATH"
+          - yc config set token ${YC_TOKEN}
+          - yc config set folder-id ${YC_FOLDER_ID}
+          - yc config set cloud-id ${YC_CLOUD_ID}
+
+      - name: create-function-packages
+        script:
+          - cd cloud-function && zip -r function.zip . -x "*.pyc" "__pycache__/*"
+          - cd ../asi-one-worker && zip -r function.zip . -x "*.pyc" "__pycache__/*"
+          - mv cloud-function/function.zip terraform/
+          - mv asi-one-worker/function.zip terraform/
+
+      - name: terraform-init
+        script:
+          - cd terraform
+          - terraform init
+
+      - name: terraform-apply
+        script:
+          - cd terraform
+          - terraform apply -auto-approve -var "token=${YC_TOKEN}" -var "imap_password=${IMAP_PASSWORD}" -var "shared_secret=${SHARED_SECRET}" -var "asi_one_key=${ASI_ONE_KEY}"
+
+cubes:
+  - name: setup-yc
+    script:
+      - apk add --no-cache curl wget git unzip
+      - curl -sSL https://storage.yandexcloud.net/yandexcloud-yc/release/install.sh | sh
+      - export PATH="$HOME/yandex-cloud/bin:$PATH"
+      - yc version
+
+  - name: configure-yc
+    script:
+      - export PATH="$HOME/yandex-cloud/bin:$PATH"
+      - yc config set token ${YC_TOKEN}
+      - yc config set folder-id ${YC_FOLDER_ID}
+      - yc config set cloud-id ${YC_CLOUD_ID}
+
+  - name: create-function-packages
+    script:
+      - cd cloud-function && zip -r function.zip . -x "*.pyc" "__pycache__/*"
+      - cd ../asi-one-worker && zip -r function.zip . -x "*.pyc" "__pycache__/*"
+      - mv cloud-function/function.zip terraform/
+      - mv asi-one-worker/function.zip terraform/
+
+  - name: terraform-init
+    script:
+      - cd terraform && terraform init
+
+  - name: terraform-apply
+    script:
+      - cd terraform && terraform apply -auto-approve -var "token=${YC_TOKEN}" -var "imap_password=${IMAP_PASSWORD}" -var "shared_secret=${SHARED_SECRET}" -var "asi_one_key=${ASI_ONE_KEY}"
