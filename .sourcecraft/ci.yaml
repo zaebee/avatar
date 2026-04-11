@@ -26,9 +26,8 @@ tasks:
           - unzip -o /tmp/terraform.zip -d /tmp
           - install -m 755 /tmp/terraform /usr/local/bin/terraform
           - terraform version
-          - cd cloud-function && zip -r function.zip . -x "*.pyc" "__pycache__/*"
-          - cd ../asi-one-worker && zip -r function.zip . -x "*.pyc" "__pycache__/*"
-          - mv cloud-function/function.zip terraform/
-          - mv asi-one-worker/function.zip terraform/
+          - cd /home/zaebee/projects/avatar/cloud-function && zip -r function.zip . -x "*.pyc" "__pycache__/*"
+          - cd /home/zaebee/projects/avatar/asi-one-worker && zip -r function.zip . -x "*.pyc" "__pycache__/*"
+          - cd /home/zaebee/projects/avatar && mv cloud-function/function.zip terraform/ && mv asi-one-worker/function.zip terraform/
           - cd terraform && terraform init
           - cd terraform && terraform apply -auto-approve -var "token=${YC_TOKEN}" -var "imap_password=${IMAP_PASSWORD}" -var "shared_secret=${SHARED_SECRET}" -var "asi_one_key=${ASI_ONE_KEY}"
