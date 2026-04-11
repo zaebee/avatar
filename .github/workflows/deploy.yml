@@ -1,0 +1,61 @@
+name: Deploy
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'terraform/**'
+      - 'cloud-function/**'
+      - 'asi-one-worker/**'
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Setup YC
+        uses: weirdascode/yandex-cloud-github-action@v1
+        with:
+          yc-token: ${{ secrets.YC_TOKEN }}
+          yc-folder-id: ${{ secrets.YC_FOLDER_ID }}
+          yc-cloud-id: ${{ secrets.YC_CLOUD_ID }}
+      
+      - name: Create Cloud Function packages
+        run: |
+          cd cloud-function
+          zip -r function.zip . -x "*.pyc" "__pycache__/*"
+          mv function.zip ../terraform/
+          
+          cd ../asi-one-worker
+          zip -r function.zip . -x "*.pyc" "__pycache__/*"
+          mv function.zip ../terraform/
+      
+      - name: Terraform Init
+        run: cd terraform && terraform init
+      
+      - name: Terraform Validate
+        run: cd terraform && terraform validate
+      
+      - name: Terraform Plan
+        run: |
+          cd terraform && terraform plan \
+            -var "token=${{ secrets.YC_TOKEN }}" \
+            -var "folder_id=${{ secrets.YC_FOLDER_ID }}" \
+            -var "cloud_id=${{ secrets.YC_CLOUD_ID }}" \
+            -var "imap_password=${{ secrets.IMAP_PASSWORD }}" \
+            -var "shared_secret=${{ secrets.SHARED_SECRET }}" \
+            -var "asi_one_key=${{ secrets.ASI_ONE_KEY }}"
+      
+      - name: Terraform Apply
+        if: github.ref == 'refs/heads/main'
+        run: |
+          cd terraform && terraform apply -auto-approve \
+            -var "token=${{ secrets.YC_TOKEN }}" \
+            -var "folder_id=${{ secrets.YC_FOLDER_ID }}" \
+            -var "cloud_id=${{ secrets.YC_CLOUD_ID }}" \
+            -var "imap_password=${{ secrets.IMAP_PASSWORD }}" \
+            -var "shared_secret=${{ secrets.SHARED_SECRET }}" \
+            -var "asi_one_key=${{ secrets.ASI_ONE_KEY }}"
