@@ -25,7 +25,7 @@ tasks:
       - name: setup-terraform
         script:
           - set -x
-          - curl -sL https://releases.hashicorp.com/terraform/1.6.0/terraform_1.6.0_linux_amd64.zip -o /tmp/terraform.zip
+          - curl -sL https://releases.hashicorp.com/terraform/1.10.0/terraform_1.10.0_linux_amd64.zip -o /tmp/terraform.zip
           - ls -la /tmp/terraform.zip || echo "download failed"
           - unzip -o -q /tmp/terraform.zip -d /tmp/
           - ls -la /tmp/terraform || echo "unzip failed"
