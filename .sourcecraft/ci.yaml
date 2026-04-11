@@ -14,8 +14,11 @@ tasks:
   - name: terraform-deploy
     cubes:
       - name: setup-yc
-        image: registry.yandex.net/yandex-cloud/cli:latest
+        image: docker.io/library/ubuntu:22.04
         script:
+          - apt-get update && apt-get install -y curl wget git unzip python3
+          - curl -sSL https://storage.yandexcloud.net/yandexcloud-yc/release/install.sh | bash
+          - export PATH="$HOME/yandex-cloud/bin:$PATH"
           - yc version
 
       - name: configure-yc
