@@ -9,9 +9,9 @@ terraform {
 }
 
 provider "yandex" {
-  token   = var.token
-  folder_id = var.folder_id
-  cloud_id = var.cloud_id
+  token    = var.token
+  folder_id = "b1gesh0suso3pvjrro56"
+  cloud_id  = "b1gbmfuuno217asel61v"
 }
 
 resource "yandex_storage_bucket" "photos" {
