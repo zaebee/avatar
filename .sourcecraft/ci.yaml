@@ -17,7 +17,6 @@ tasks:
         image: docker.io/library/ubuntu:22.04
         env:
           YC_TOKEN: ${{ secrets.YC_TOKEN }}
-          IMAP_USER: ${{ secrets.IMAP_USER }}
           IMAP_PASSWORD: ${{ secrets.IMAP_PASSWORD }}
           SHARED_SECRET: ${{ secrets.SHARED_SECRET }}
           ASI_ONE_KEY: ${{ secrets.ASI_ONE_KEY }}
