@@ -1,15 +1,3 @@
-data "yandex_function" "imap_poller" {
-  name = "asi-one-imap-poller"
-}
-
-data "yandex_function" "asi_one_worker" {
-  name = "asi-one-worker"
-}
-
-data "yandex_message_queue" "instagram_posts" {
-  name = "asi-one-instagram-posts"
-}
-
 resource "yandex_function_trigger" "scheduler" {
   name        = "asi-one-scheduler"
   description = "Trigger every 5 minutes for IMAP poller"
@@ -19,7 +7,7 @@ resource "yandex_function_trigger" "scheduler" {
   }
   
   function {
-    id = data.yandex_function.imap_poller.id
+    id = "dj60000000k31nek0116"
   }
 }
 
@@ -28,12 +16,12 @@ resource "yandex_function_trigger" "mq_trigger" {
   description = "Trigger on new queue messages"
   
   message_queue {
-    queue_id             = data.yandex_message_queue.instagram_posts.arn
+    queue_id             = "yrn:yc:ymq:ru-central1:b1gesh0suso3pvjrro56:asi-one-instagram-posts"
     service_account_id  = "ajeila5562o058l0q4eq"
     batch_cutoff         = 0
   }
   
   function {
-    id = data.yandex_function.asi_one_worker.id
+    id = "d4epo4b8v2dmbpt4jp96"
   }
 }
