@@ -12,7 +12,7 @@ terraform {
 provider "yandex" {
   token   = var.token
   folder_id = var.folder_id
-  cloud_id  = var.cloud_id
+  cloud_id = var.cloud_id
 }
 
 resource "yandex_storage_bucket" "photos" {
