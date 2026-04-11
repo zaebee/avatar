@@ -9,7 +9,6 @@ terraform {
 }
 
 provider "yandex" {
-  token    = var.token
   folder_id = "b1gesh0suso3pvjrro56"
   cloud_id  = "b1gbmfuuno217asel61v"
 }
