@@ -8,7 +8,9 @@ terraform {
   }
 }
 
-provider "yandex" {}
+provider "yandex" {
+  token = var.token
+}
 
 resource "yandex_storage_bucket" "photos" {
   bucket = "asi-one-photos"
