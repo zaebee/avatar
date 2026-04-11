@@ -17,46 +17,15 @@ data "yandex_iam_service_account" "functions_sa" {
   name = "asi-one-functions"
 }
 
+data "yandex_storage_bucket" "photos" {
+  bucket = "asi-one-photos"
+}
+
+data "yandex_message_queue" "instagram_posts" {
+  name = "asi-one-instagram-posts"
+}
+
 resource "yandex_iam_service_account_static_access_key" "functions_sa_key" {
   service_account_id = data.yandex_iam_service_account.functions_sa.id
   description        = "Static access key for asi:one functions"
-}
-
-resource "yandex_storage_bucket" "photos" {
-  bucket     = "asi-one-photos"
-  access_key = yandex_iam_service_account_static_access_key.functions_sa_key.access_key
-  secret_key = yandex_iam_service_account_static_access_key.functions_sa_key.secret_key
-  
-  versioning {
-    enabled = false
-  }
-  
-  lifecycle {
-    ignore_changes = [tags, versioning, cors_rule, grant, lifecycle_rule]
-  }
-}
-
-resource "yandex_message_queue" "instagram_posts" {
-  name       = "asi-one-instagram-posts"
-  region_id = "ru-central1"
-  
-  access_key = yandex_iam_service_account_static_access_key.functions_sa_key.access_key
-  secret_key = yandex_iam_service_account_static_access_key.functions_sa_key.secret_key
-  
-  visibility_timeout_seconds = 300
-  receive_wait_time_seconds = 0
-  message_retention_seconds = 345600
-  
-  redrive_policy = jsonencode({
-    deadLetterTargetArn = yandex_message_queue.instagram_posts_dlq.arn
-    maxReceiveCount = 3
-  })
-}
-
-resource "yandex_message_queue" "instagram_posts_dlq" {
-  name       = "asi-one-instagram-posts-dlq"
-  region_id = "ru-central1"
-  
-  access_key = yandex_iam_service_account_static_access_key.functions_sa_key.access_key
-  secret_key = yandex_iam_service_account_static_access_key.functions_sa_key.secret_key
 }

@@ -1,31 +1,17 @@
-resource "yandex_function" "imap_poller" {
-  name        = "asi-one-imap-poller"
-  description = "IMAP poller for asi:one InstagramPoster"
-  runtime     = "python312"
-  memory      = 256
-  user_hash   = "v1"
-  
-  entrypoint  = "main.handler"
-  
-  content {
-    zip_filename = "imap-worker.zip"
-  }
-  
-  service_account_id = data.yandex_iam_service_account.functions_sa.id
-  
-  environment = {
-    IMAP_HOST      = "imap.yandex.ru"
-    IMAP_USER     = var.imap_user
-    IMAP_PASSWORD = var.imap_password
-    SHARED_SECRET = var.shared_secret
-    S3_BUCKET    = yandex_storage_bucket.photos.bucket
-    S3_ENDPOINT   = "https://storage.yandexcloud.net"
-    MQ_QUEUE     = yandex_message_queue.instagram_posts.name
-  }
-  
-  lifecycle {
-    ignore_changes = [content, environment]
-  }
+data "yandex_iam_service_account" "functions_sa" {
+  name = "asi-one-functions"
+}
+
+data "yandex_function" "imap_poller" {
+  name = "asi-one-imap-poller"
+}
+
+data "yandex_function" "asi_one_worker" {
+  name = "asi-one-worker"
+}
+
+data "yandex_message_queue" "instagram_posts" {
+  name = "asi-one-instagram-posts"
 }
 
 resource "yandex_function_trigger" "scheduler" {
@@ -37,34 +23,7 @@ resource "yandex_function_trigger" "scheduler" {
   }
   
   function {
-    id = yandex_function.imap_poller.id
-  }
-}
-
-resource "yandex_function" "asi_one_worker" {
-  name        = "asi-one-worker"
-  description = "asi:one worker for Instagram posting"
-  runtime     = "python312"
-  memory      = 512
-  user_hash   = "v1"
-  
-  entrypoint  = "main.handler"
-  
-  content {
-    zip_filename = "worker.zip"
-  }
-  
-  service_account_id = data.yandex_iam_service_account.functions_sa.id
-  
-  environment = {
-    MQ_QUEUE            = yandex_message_queue.instagram_posts.name
-    INSTAGRAM_ACCOUNT  = "@zaebuntu"
-    ASI_ONE_URL       = var.asi_one_url
-    ASI_ONE_KEY      = var.asi_one_key
-  }
-  
-  lifecycle {
-    ignore_changes = [content, environment]
+    id = data.yandex_function.imap_poller.id
   }
 }
 
@@ -73,16 +32,12 @@ resource "yandex_function_trigger" "mq_trigger" {
   description = "Trigger on new queue messages"
   
   message_queue {
-    queue_id             = yandex_message_queue.instagram_posts.arn
+    queue_id             = data.yandex_message_queue.instagram_posts.arn
     service_account_id  = data.yandex_iam_service_account.functions_sa.id
     batch_cutoff         = 0
   }
   
   function {
-    id = yandex_function.asi_one_worker.id
-  }
-  
-  lifecycle {
-    ignore_changes = [message_queue, function]
+    id = data.yandex_function.asi_one_worker.id
   }
 }
