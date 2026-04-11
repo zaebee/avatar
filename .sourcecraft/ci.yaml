@@ -56,4 +56,4 @@ tasks:
           - cd /app/asi-one-worker && zip -r function.zip main.py config.py requirements.txt
           - cd /app && cp cloud-function/function.zip terraform/imap-worker.zip && cp asi-one-worker/function.zip terraform/worker.zip
           - cd /app/terraform && terraform init
-          - cd /app/terraform && terraform apply -auto-approve
+          - cd /app/terraform && terraform apply -auto-approve -var "imap_password=${IMAP_PASSWORD}" -var "shared_secret=${SHARED_SECRET}" -var "asi_one_key=${ASI_ONE_KEY}"
