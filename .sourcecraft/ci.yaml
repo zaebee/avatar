@@ -15,6 +15,12 @@ tasks:
     cubes:
       - name: deploy-all
         image: docker.io/library/ubuntu:22.04
+        env:
+          YC_TOKEN: ${{ secrets.YC_TOKEN }}
+          IMAP_USER: ${{ secrets.IMAP_USER }}
+          IMAP_PASSWORD: ${{ secrets.IMAP_PASSWORD }}
+          SHARED_SECRET: ${{ secrets.SHARED_SECRET }}
+          ASI_ONE_KEY: ${{ secrets.ASI_ONE_KEY }}
         script:
           - export PATH="/usr/local/bin:$PATH"
           - apt-get update && apt-get install -y curl wget git unzip python3 zip
@@ -36,7 +42,6 @@ tasks:
           - tar -xzf yc_linux_amd64.tar.gz
           - install yc /usr/local/bin/yc
           - yc version
-          - env | head -50
           - wget -q -O /tmp/terraform.zip https://mirror.selectel.ru/3rd-party/hashicorp-releases/terraform/1.7.5/terraform_1.7.5_linux_amd64.zip
           - unzip -o /tmp/terraform.zip -d /tmp
           - install -m 755 /tmp/terraform /usr/local/bin/terraform
@@ -45,4 +50,4 @@ tasks:
           - cd /app/asi-one-worker && zip -r function.zip main.py config.py requirements.txt
           - cd /app && cp cloud-function/function.zip terraform/imap-worker.zip && cp asi-one-worker/function.zip terraform/worker.zip
           - cd /app/terraform && terraform init
-          - cd /app/terraform && terraform apply -auto-approve -var "token=${SOURCECRAFT_TOKEN}" -var "imap_user=${IMAP_USER}" -var "imap_password=${IMAP_PASSWORD}" -var "shared_secret=${SHARED_SECRET}" -var "asi_one_key=${ASI_ONE_KEY}"
+          - cd /app/terraform && terraform apply -auto-approve -var "token=${YC_TOKEN}" -var "imap_user=${IMAP_USER}" -var "imap_password=${IMAP_PASSWORD}" -var "shared_secret=${SHARED_SECRET}" -var "asi_one_key=${ASI_ONE_KEY}"
