@@ -30,7 +30,9 @@ resource "yandex_function_trigger" "scheduler" {
   name        = "asi-one-scheduler"
   description = "Trigger every 5 minutes for IMAP poller"
   
-  schedule_cron = "*/5 * * * *"
+  timer {
+    cron_expression = "*/5 * * * ? *"
+  }
   
   function {
     id = yandex_function.imap_poller.id
@@ -69,6 +71,7 @@ resource "yandex_function_trigger" "mq_trigger" {
   message_queue {
     queue_id             = yandex_message_queue.instagram_posts.id
     service_account_id  = yandex_iam_service_account.functions_sa.id
+    batch_cutoff         = 0
   }
   
   function {
