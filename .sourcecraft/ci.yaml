@@ -17,8 +17,9 @@ tasks:
         image: docker.io/library/ubuntu:22.04
         script:
           - apt-get update && apt-get install -y curl wget git unzip python3
-          - wget https://storage.yandexcloud.net/yandexcloud-yc/latest/linux/amd64/yc -O /usr/local/bin/yc
-          - chmod +x /usr/local/bin/yc
+          - curl -O https://storage.yandexcloud.net/yandexcloud-yc/release/yc_linux_amd64.tar.gz
+          - tar -xzf yc_linux_amd64.tar.gz
+          - install yc /usr/local/bin/yc
           - yc version
 
       - name: setup-terraform
