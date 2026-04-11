@@ -12,19 +12,19 @@ resource "yandex_lockbox_secret_version" "imap_credentials" {
   
   entries {
     key   = "imap_host"
-    value = "imap.yandex.ru"
+    text  = "imap.yandex.ru"
   }
   entries {
     key   = "imap_user"
-    value = var.imap_user
+    text  = var.imap_user
   }
   entries {
     key   = "imap_password"
-    value = var.imap_password
+    text  = var.imap_password
   }
   entries {
     key   = "shared_secret"
-    value = var.shared_secret
+    text  = var.shared_secret
   }
 }
 
@@ -42,10 +42,10 @@ resource "yandex_lockbox_secret_version" "asi_one" {
   
   entries {
     key   = "url"
-    value = "https://api.asi1.ai/v1/chat/completions"
+    text  = "https://api.asi1.ai/v1/chat/completions"
   }
   entries {
     key   = "key"
-    value = var.asi_one_key
+    text  = var.asi_one_key
   }
 }

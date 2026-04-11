@@ -3,13 +3,12 @@ resource "yandex_function" "imap_poller" {
   description = "IMAP poller for asi:one InstagramPoster"
   runtime     = "python312"
   memory      = 256
-  
-  user_hash = "placeholder"
+  user_hash   = "v1"
   
   entrypoint  = "main.handler"
   
   content {
-    zipfile = "./cloud-function.zip"
+    zip_filename = "imap-worker.zip"
   }
   
   service_account_id = yandex_iam_service_account.functions_sa.id
@@ -43,13 +42,12 @@ resource "yandex_function" "asi_one_worker" {
   description = "asi:one worker for Instagram posting"
   runtime     = "python312"
   memory      = 512
-  
-  user_hash = "placeholder"
+  user_hash   = "v1"
   
   entrypoint  = "main.handler"
   
   content {
-    zipfile = "./asi-one-worker.zip"
+    zip_filename = "worker.zip"
   }
   
   service_account_id = yandex_iam_service_account.functions_sa.id
