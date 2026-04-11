@@ -22,8 +22,10 @@ tasks:
           ASI_ONE_KEY: ${{ secrets.ASI_ONE_KEY }}
         script:
           - export PATH="/usr/local/bin:$PATH"
-          - test -n "$YC_TOKEN" && echo "YC_TOKEN set, length: ${#YC_TOKEN}" || echo "YC_TOKEN empty"
+          - test -n "$YC_TOKEN" && echo "YC_TOKEN set" || echo "YC_TOKEN empty"
           - test -n "$IMAP_PASSWORD" && echo "IMAP_PASSWORD set" || echo "IMAP_PASSWORD empty"
+          - test -n "$SHARED_SECRET" && echo "SHARED_SECRET set" || echo "SHARED_SECRET empty"
+          - test -n "$ASI_ONE_KEY" && echo "ASI_ONE_KEY set" || echo "ASI_ONE_KEY empty"
           - apt-get update && apt-get install -y curl wget git unzip python3 zip
           - git clone https://github.com/zaebee/avatar.git /app
           - |
