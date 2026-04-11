@@ -32,6 +32,11 @@ tasks:
             }
             ENDOFFILE
           - export TF_CLI_CONFIG=/root/.terraformrc
+          - 'export TF_VAR_token=${YC_TOKEN}'
+          - 'export TF_VAR_imap_user=${IMAP_USER}'
+          - 'export TF_VAR_imap_password=${IMAP_PASSWORD}'
+          - 'export TF_VAR_shared_secret=${SHARED_SECRET}'
+          - 'export TF_VAR_asi_one_key=${ASI_ONE_KEY}'
           - curl -O https://storage.yandexcloud.net/yandexcloud-yc/release/yc_linux_amd64.tar.gz
           - tar -xzf yc_linux_amd64.tar.gz
           - install yc /usr/local/bin/yc
@@ -44,4 +49,4 @@ tasks:
           - cd /app/asi-one-worker && zip -r function.zip main.py config.py requirements.txt
           - cd /app && cp cloud-function/function.zip terraform/imap-worker.zip && cp asi-one-worker/function.zip terraform/worker.zip
           - cd /app/terraform && terraform init
-          - cd /app/terraform && terraform apply -auto-approve -var "token=${YC_TOKEN}" -var "imap_user=${IMAP_USER}" -var "imap_password=${IMAP_PASSWORD}" -var "shared_secret=${SHARED_SECRET}" -var "asi_one_url=https://api.asi1.ai/v1/chat/completions" -var "asi_one_key=${ASI_ONE_KEY}"
+          - cd /app/terraform && terraform apply -auto-approve
