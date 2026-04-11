@@ -3,11 +3,14 @@ resource "yandex_function" "imap_poller" {
   description = "IMAP poller for asi:one InstagramPoster"
   runtime     = "python312"
   memory      = 256
-  timeout     = 300
-  execution_timeout = 300
+  
+  user_hash = "placeholder"
   
   entrypoint  = "main.handler"
-  content     = filebase64("./cloud-function.zip")
+  
+  content {
+    zipfile = "./cloud-function.zip"
+  }
   
   service_account_id = yandex_iam_service_account.functions_sa.id
   
@@ -17,19 +20,6 @@ resource "yandex_function" "imap_poller" {
     S3_ENDPOINT = "https://storage.yandexcloud.net"
     MQ_QUEUE   = yandex_message_queue.instagram_posts.name
   }
-  
-  secrets = [
-    {
-      id      = yandex_lockbox_secret.imap_credentials.id
-      key     = "imap_password"
-      version = "latest"
-    },
-    {
-      id      = yandex_lockbox_secret.imap_credentials.id
-      key     = "shared_secret"
-      version = "latest"
-    }
-  ]
   
   depends_on = [
     yandex_message_queue.instagram_posts,
@@ -53,11 +43,14 @@ resource "yandex_function" "asi_one_worker" {
   description = "asi:one worker for Instagram posting"
   runtime     = "python312"
   memory      = 512
-  timeout     = 300
-  execution_timeout = 300
+  
+  user_hash = "placeholder"
   
   entrypoint  = "main.handler"
-  content     = filebase64("./asi-one-worker.zip")
+  
+  content {
+    zipfile = "./asi-one-worker.zip"
+  }
   
   service_account_id = yandex_iam_service_account.functions_sa.id
   
@@ -65,14 +58,6 @@ resource "yandex_function" "asi_one_worker" {
     MQ_QUEUE           = yandex_message_queue.instagram_posts.name
     INSTAGRAM_ACCOUNT = "@zaebuntu"
   }
-  
-  secrets = [
-    {
-      id      = yandex_lockbox_secret.asi_one.id
-      key     = "key"
-      version = "latest"
-    }
-  ]
   
   depends_on = [
     yandex_message_queue.instagram_posts

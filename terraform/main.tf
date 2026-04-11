@@ -16,7 +16,6 @@ provider "yandex" {
 
 resource "yandex_storage_bucket" "photos" {
   bucket = "asi-one-photos"
-  acl    = "public-read"
   
   versioning {
     enabled = false
