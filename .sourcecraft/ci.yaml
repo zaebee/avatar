@@ -13,24 +13,22 @@ workflows:
 tasks:
   - name: terraform-deploy
     cubes:
-      - name: setup-yc
+      - name: setup-yc-and-terraform
         image: docker.io/library/ubuntu:22.04
         script:
+          - export PATH="/usr/local/bin:$PATH"
           - apt-get update && apt-get install -y curl wget git unzip python3
           - curl -O https://storage.yandexcloud.net/yandexcloud-yc/release/yc_linux_amd64.tar.gz
           - tar -xzf yc_linux_amd64.tar.gz
           - install yc /usr/local/bin/yc
           - yc version
-
-      - name: setup-terraform
-        script:
-          - set -x
-          - curl -sL -w "%{http_code}" https://releases.hashicorp.com/terraform/1.10.0/terraform_1.10.0_linux_amd64.zip -o /tmp/terraform.zip
-          - file /tmp/terraform.zip
-          - head -c 100 /tmp/terraform.zip
+          - curl -sL https://releases.hashicorp.com/terraform/1.9.8/terraform_1.9.8_linux_amd64.zip -o /tmp/terraform.zip
+          - unzip -o -q /tmp/terraform.zip -d /usr/local/bin/
+          - terraform version
 
       - name: configure-yc
         script:
+          - export PATH="/usr/local/bin:$PATH"
           - yc config set token ${YC_TOKEN}
           - yc config set folder-id ${YC_FOLDER_ID}
           - yc config set cloud-id ${YC_CLOUD_ID}
