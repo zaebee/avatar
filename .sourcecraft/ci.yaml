@@ -19,9 +19,6 @@ tasks:
           - export PATH="/usr/local/bin:$PATH"
           - apt-get update && apt-get install -y curl wget git unzip python3 zip
           - git clone https://github.com/zaebee/avatar.git /app
-          - export YC_SERVICE_ACCOUNT_KEY || true
-          - env | grep YC_ || echo "No YC_ vars in env"
-          - 'test -n "$YC_SERVICE_ACCOUNT_KEY" && echo "LENGTH: ${#YC_SERVICE_ACCOUNT_KEY}" || echo "EMPTY"'
           - |
             cat > /root/.terraformrc << 'ENDOFFILE'
             provider_installation {
@@ -47,4 +44,4 @@ tasks:
           - cd /app/asi-one-worker && zip -r function.zip main.py config.py requirements.txt
           - cd /app && cp cloud-function/function.zip terraform/imap-worker.zip && cp asi-one-worker/function.zip terraform/worker.zip
           - cd /app/terraform && terraform init
-          - cd /app/terraform && terraform apply -auto-approve -var "imap_user=${IMAP_USER}" -var "imap_password=${IMAP_PASSWORD}" -var "shared_secret=${SHARED_SECRET}" -var "asi_one_key=${ASI_ONE_KEY}"
+          - cd /app/terraform && terraform apply -auto-approve -var "token=${YC_TOKEN}" -var "imap_user=${IMAP_USER}" -var "imap_password=${IMAP_PASSWORD}" -var "shared_secret=${SHARED_SECRET}" -var "asi_one_key=${ASI_ONE_KEY}"
