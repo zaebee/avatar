@@ -9,7 +9,7 @@ terraform {
 }
 
 provider "yandex" {
-  token = var.token
+  service_account_key_file = "/app/authorized_key.json"
 }
 
 resource "yandex_storage_bucket" "photos" {
