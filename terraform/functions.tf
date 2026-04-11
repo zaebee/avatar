@@ -1,7 +1,3 @@
-data "yandex_iam_service_account" "functions_sa" {
-  name = "asi-one-functions"
-}
-
 data "yandex_function" "imap_poller" {
   name = "asi-one-imap-poller"
 }
@@ -33,7 +29,7 @@ resource "yandex_function_trigger" "mq_trigger" {
   
   message_queue {
     queue_id             = data.yandex_message_queue.instagram_posts.arn
-    service_account_id  = data.yandex_iam_service_account.functions_sa.id
+    service_account_id  = "ajeila5562o058l0q4eq"
     batch_cutoff         = 0
   }
   
