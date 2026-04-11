@@ -1,0 +1,39 @@
+variable "token" {
+  description = "Yandex Cloud token"
+  type        = string
+  sensitive   = true
+}
+
+variable "folder_id" {
+  description = "Yandex Cloud folder ID"
+  type        = string
+}
+
+variable "cloud_id" {
+  description = "Yandex Cloud cloud ID"
+  type        = string
+}
+
+variable "imap_user" {
+  description = "IMAP user email"
+  type        = string
+  default     = "asione@chronicles.website.yandexcloud.net"
+}
+
+variable "imap_password" {
+  description = "IMAP password"
+  type        = string
+  sensitive   = true
+}
+
+variable "shared_secret" {
+  description = "Shared secret for encryption"
+  type        = string
+  sensitive   = true
+}
+
+variable "asi_one_key" {
+  description = "asi:one API key"
+  type        = string
+  sensitive   = true
+}

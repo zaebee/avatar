@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>asi:one Encryptor</title>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      max-width: 600px;
+      margin: 0 auto;
+      padding: 20px;
+      background: #f5f5f5;
+    }
+    h1 { color: #333; font-size: 24px; }
+    .container { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+    label { display: block; margin-bottom: 8px; font-weight: 500; color: #555; }
+    textarea, input[type="text"] {
+      width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 4px;
+      font-size: 16px; margin-bottom: 16px;
+    }
+    textarea { min-height: 100px; resize: vertical; }
+    input[type="file"] { margin-bottom: 16px; }
+    button {
+      background: #007bff; color: white; border: none; padding: 12px 24px;
+      font-size: 16px; border-radius: 4px; cursor: pointer; width: 100%;
+    }
+    button:hover { background: #0056b3; }
+    button:disabled { background: #ccc; cursor: not-allowed; }
+    #output {
+      margin-top: 16px; padding: 12px; background: #f8f9fa; border: 1px solid #ddd;
+      border-radius: 4px; word-break: break-all; font-family: monospace; font-size: 14px;
+      display: none;
+    }
+    #output.visible { display: block; }
+    .copy-btn {
+      background: #28a745; margin-top: 8px; width: auto; padding: 8px 16px;
+    }
+    .copy-btn:hover { background: #218838; }
+    .error { color: #dc3545; margin-top: 8px; }
+    .success { color: #28a745; margin-top: 8px; }
+    .note { font-size: 12px; color: #666; margin-top: 4px; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Шифратор для asi:one</h1>
+    
+    <label for="secret">Секретный ключ</label>
+    <input type="text" id="secret" placeholder="Ваш секретный ключ">
+    <div class="note">Этот ключ известен только вам и системе</div>
+    
+    <label for="text">Текст поста</label>
+    <textarea id="text" placeholder="Введите текст для Instagram поста..."></textarea>
+    
+    <label for="photos">Фото (до 2 изображений)</label>
+    <input type="file" id="photos" accept="image/*" multiple>
+    <div class="note">Фото будут сжаты до 1MB каждое</div>
+    
+    <button id="encrypt" disabled>Зашифровать</button>
+    <div id="status"></div>
+    
+    <div id="output">
+      <div>Зашифрованный контент:</div>
+      <div id="encrypted-content"></div>
+      <button class="copy-btn" id="copy-btn">Копировать</button>
+    </div>
+  </div>
+
+  <script>
+    const MAX_SIZE_MB = 1;
+    const PBKDF2_ITERATIONS = 100000;
+
+    const secretInput = document.getElementById('secret');
+    const textInput = document.getElementById('text');
+    const photosInput = document.getElementById('photos');
+    const encryptBtn = document.getElementById('encrypt');
+    const statusDiv = document.getElementById('status');
+    const outputDiv = document.getElementById('output');
+    const encryptedContentDiv = document.getElementById('encrypted-content');
+    const copyBtn = document.getElementById('copy-btn');
+
+    function updateButtonState() {
+      encryptBtn.disabled = !secretInput.value || !textInput.value;
+    }
+
+    secretInput.addEventListener('input', updateButtonState);
+    textInput.addEventListener('input', updateButtonState);
+
+    function arrayBufferToBase64(buffer) {
+      const bytes = new Uint8Array(buffer);
+      let binary = '';
+      for (let i = 0; i < bytes.byteLength; i++) {
+        binary += String.fromCharCode(bytes[i]);
+      }
+      return btoa(binary);
+    }
+
+    async function compressImage(file, maxSizeMB = MAX_SIZE_MB) {
+      return new Promise((resolve, reject) => {
+        const img = new Image();
+        img.onload = () => {
+          const canvas = document.createElement('canvas');
+          const ctx = canvas.getContext('2d');
+          
+          let width = img.width;
+          let height = img.height;
+          let quality = 0.9;
+          const maxBytes = maxSizeMB * 1024 * 1024;
+          
+          function tryCompress() {
+            canvas.width = width;
+            canvas.height = height;
+            ctx.drawImage(img, 0, 0, width, height);
+            
+            canvas.toBlob((blob) => {
+              if (!blob) {
+                reject(new Error('Failed to compress image'));
+                return;
+              }
+              
+              if (blob.size > maxBytes && quality > 0.1) {
+                quality -= 0.1;
+                width = Math.floor(width * 0.8);
+                height = Math.floor(height * 0.8);
+                tryCompress();
+              } else {
+                resolve(blob);
+              }
+            }, 'image/jpeg', quality);
+          };
+          
+          tryCompress();
+        };
+        img.onerror = () => reject(new Error('Failed to load image'));
+        img.src = URL.createObjectURL(file);
+      });
+    }
+
+    async function deriveKey(password, salt) {
+      const encoder = new TextEncoder();
+      const passwordKey = await crypto.subtle.importKey(
+        'raw',
+        encoder.encode(password),
+        'PBKDF2',
+        false,
+        ['deriveBits', 'deriveKey']
+      );
+      
+      return crypto.subtle.deriveKey(
+        {
+          name: 'PBKDF2',
+          salt: salt,
+          iterations: PBKDF2_ITERATIONS,
+          hash: 'SHA-256'
+        },
+        passwordKey,
+        { name: 'AES-GCM', length: 256 },
+        false,
+        ['encrypt', 'decrypt']
+      );
+    }
+
+    async function encrypt(plaintext, password) {
+      const encoder = new TextEncoder();
+      const data = encoder.encode(plaintext);
+      
+      const salt = crypto.getRandomValues(new Uint8Array(16));
+      const iv = crypto.getRandomValues(new Uint8Array(12));
+      
+      const key = await deriveKey(password, salt);
+      
+      const ciphertext = await crypto.subtle.encrypt(
+        { name: 'AES-GCM', iv: iv },
+        key,
+        data
+      );
+      
+      const combined = new Uint8Array(salt.length + iv.length + ciphertext.byteLength);
+      combined.set(salt, 0);
+      combined.set(iv, salt.length);
+      combined.set(new Uint8Array(ciphertext), salt.length + iv.length);
+      
+      return arrayBufferToBase64(combined);
+    }
+
+    async function encryptContent(text, files, secret) {
+      const images = [];
+      
+      for (const file of files) {
+        const compressed = await compressImage(file, MAX_SIZE_MB);
+        const base64 = await new Promise((resolve) => {
+          const reader = new FileReader();
+          reader.onload = () => resolve(reader.result.split(',')[1]);
+          reader.onloaderror = () => resolve(null);
+          reader.readAsDataURL(compressed);
+        });
+        if (base64) {
+          images.push(base64);
+        }
+      }
+      
+      const payload = JSON.stringify({
+        text: text,
+        images: images,
+        timestamp: new Date().toISOString()
+      });
+      
+      return encrypt(payload, secret);
+    }
+
+    encryptBtn.addEventListener('click', async () => {
+      const secret = secretInput.value.trim();
+      const text = textInput.value.trim();
+      const files = Array.from(photosInput.files);
+      
+      if (!secret || !text) {
+        showStatus('Заполните ключ и текст', 'error');
+        return;
+      }
+      
+      if (files.length > 2) {
+        showStatus('Максимум 2 фото', 'error');
+        return;
+      }
+      
+      encryptBtn.disabled = true;
+      encryptBtn.textContent = 'Шифрование...';
+      showStatus('', '');
+      
+      try {
+        const result = await encryptContent(text, files, secret);
+        encryptedContentDiv.textContent = result;
+        outputDiv.classList.add('visible');
+        showStatus('Готово! Скопируйте зашифрованный текст и отправьте в письме', 'success');
+      } catch (error) {
+        showStatus('Ошибка: ' + error.message, 'error');
+        console.error(error);
+      } finally {
+        encryptBtn.disabled = false;
+        encryptBtn.textContent = 'Зашифровать';
+      }
+    });
+
+    copyBtn.addEventListener('click', () => {
+      navigator.clipboard.writeText(encryptedContentDiv.textContent).then(() => {
+        showStatus('Скопировано!', 'success');
+      }).catch(() => {
+        showStatus('Не удалось скопировать', 'error');
+      });
+    });
+
+    function showStatus(message, type) {
+      statusDiv.textContent = message;
+      statusDiv.className = type;
+    }
+  </script>
+</body>
+</html>
