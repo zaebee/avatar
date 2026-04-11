@@ -8,7 +8,7 @@ resource "yandex_function" "imap_poller" {
   entrypoint  = "main.handler"
   
   content {
-    filename = "imap-worker.zip"
+    zip_filename = "imap-worker.zip"
   }
   
   service_account_id = "ajeila5562o058l0q4eq"
