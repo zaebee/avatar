@@ -17,15 +17,22 @@ tasks:
         image: docker.io/library/ubuntu:22.04
         script:
           - apt-get update && apt-get install -y curl wget git unzip python3
-          - curl -sSL https://storage.yandexcloud.net/yandexcloud-yc/release/install.sh | bash
-          - export PATH="$HOME/yandex-cloud/bin:$PATH"
+          - wget https://storage.yandexcloud.net/yandexcloud-yc/latest/linux/amd64/yc -O /usr/local/bin/yc
+          - chmod +x /usr/local/bin/yc
           - yc version
+
+      - name: setup-terraform
+        script:
+          - wget -q https://releases.hashicorp.com/terraform/1.6.0/terraform_1.6.0_linux_amd64.zip -O /tmp/terraform.zip
+          - unzip -q /tmp/terraform.zip -d /usr/local/bin/
+          - terraform version
 
       - name: configure-yc
         script:
           - yc config set token ${YC_TOKEN}
           - yc config set folder-id ${YC_FOLDER_ID}
           - yc config set cloud-id ${YC_CLOUD_ID}
+          - yc config list
 
       - name: create-function-packages
         script:
