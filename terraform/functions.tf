@@ -74,7 +74,7 @@ resource "yandex_function_trigger" "mq_trigger" {
   description = "Trigger on new queue messages"
   
   message_queue {
-    queue_arn           = yandex_message_queue.instagram_posts.arn
+    queue_id             = yandex_message_queue.instagram_posts.arn
     service_account_id  = data.yandex_iam_service_account.functions_sa.id
     batch_cutoff         = 0
   }
