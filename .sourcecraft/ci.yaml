@@ -25,12 +25,9 @@ tasks:
       - name: setup-terraform
         script:
           - set -x
-          - curl -sL https://releases.hashicorp.com/terraform/1.10.0/terraform_1.10.0_linux_amd64.zip -o /tmp/terraform.zip
-          - ls -la /tmp/terraform.zip || echo "download failed"
-          - unzip -o -q /tmp/terraform.zip -d /tmp/
-          - ls -la /tmp/terraform || echo "unzip failed"
-          - install /tmp/terraform /usr/local/bin/terraform
-          - /usr/local/bin/terraform version || echo "terraform failed"
+          - curl -sL -w "%{http_code}" https://releases.hashicorp.com/terraform/1.10.0/terraform_1.10.0_linux_amd64.zip -o /tmp/terraform.zip
+          - file /tmp/terraform.zip
+          - head -c 100 /tmp/terraform.zip
 
       - name: configure-yc
         script:
