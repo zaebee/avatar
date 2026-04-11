@@ -19,7 +19,7 @@ tasks:
           - export PATH="/usr/local/bin:$PATH"
           - apt-get update && apt-get install -y curl wget git unzip python3 zip
           - git clone https://github.com/zaebee/avatar.git /app
-          - 'echo "${YC_SERVICE_ACCOUNT_KEY}" > /app/authorized_key.json'
+          - 'echo $YC_SERVICE_ACCOUNT_KEY > /app/authorized_key.json'
           - |
             cat > /root/.terraformrc << 'ENDOFFILE'
             provider_installation {
