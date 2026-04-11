@@ -1,9 +1,3 @@
-variable "token" {
-  description = "Yandex Cloud token"
-  type        = string
-  sensitive   = true
-}
-
 variable "folder_id" {
   description = "Yandex Cloud folder ID"
   type        = string

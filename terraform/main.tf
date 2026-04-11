@@ -10,8 +10,6 @@ terraform {
 
 provider "yandex" {
   service_account_key_file = "/app/authorized_key.json"
-  folder_id           = "b1gesh0suso3pvjrro56"
-  cloud_id           = "b1gbmfuuno217asel61v"
 }
 
 resource "yandex_storage_bucket" "photos" {
