@@ -19,11 +19,11 @@
 │  Android/Laptop                                                │
 │  ┌─────────────────┐    ┌──────────────────┐                   │
 │  │ Web-encryptor   │───▶│ Yandex Mail      │                   │
-│  │ (AES-256 + key)│    │ (обычная тема)   │                   │
-│  └─────────────────┘    └────────┬─────────┘                  │
-│                                   │                            │
-└───────────────────────────────────┼────────────────────────────┘
-                                    ▼
+│  │ (AES-256 + PBKDF2│   │ (обычная тема)   │                   │
+│  │  + сжатие фото)  │    └────────┬─────────┘                  │
+│  └─────────────────┘           │                            │
+└────────────────────────────────┼────────────────────────────┘
+                                 ▼
 ┌─────────────────────────────────────────────────────────────────┐
 │  Yandex Cloud                                                  │
 │  ┌─────────────┐   ┌────────────┐   ┌──────────┐   ┌────────┐ │
@@ -50,6 +50,8 @@
 - Выход: зашифрованная строка (base64)
 
 **Технология:** vanilla JS + Web Crypto API (AES-256-GCM)
+
+**Сжатие:** JPEG до 1MB перед шифрованием (canvas API)
 
 ### 2. IMAP-poller Cloud Function
 
@@ -107,7 +109,9 @@
 ### Шифрование
 
 - **Алгоритм:** AES-256-GCM
-- **Ключ:** Shared secret (хранится в env Cloud Function)
+- **Ключ:** PBKDF2 (100k итераций, SHA-256) из shared secret
+- **IV:** Уникальный 96-bit random IV для каждого шифрования
+- **Формат:** base64(IV + ciphertext + auth_tag)
 - **Пароль пользователя:** Не передаётся в письме
 
 ### Credentials
@@ -124,8 +128,7 @@
 | Cloud Functions | ~100-200 ₽/мес |
 | Object Storage | ~50 ₽/мес |
 | Message Queue | ~30 ₽/мес |
-| API Gateway | ~50 ₽/мес |
-| **Итого** | **~300 ₽/мес** |
+| **Итого** | **~250 ₽/мес** |
 
 ---
 
@@ -155,7 +158,7 @@
 
 ## Зависимости
 
-- Yandex Cloud (API Gateway, Functions, Storage, MQ, Secrets)
+- Yandex Cloud (Functions, Storage, MQ, Secrets)
 - Yandex Mail (IMAP-доступ)
 - asi:one API (`https://api.asi1.ai/v1/chat/completions`)
 - Instagram account: `@zaebuntu`
