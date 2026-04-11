@@ -30,6 +30,10 @@ resource "yandex_storage_bucket" "photos" {
   versioning {
     enabled = false
   }
+  
+  lifecycle {
+    ignore_changes = [tags]
+  }
 }
 
 resource "yandex_message_queue" "instagram_posts" {
