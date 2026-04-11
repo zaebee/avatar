@@ -20,5 +20,5 @@ output "asi_one_worker_function_id" {
 
 output "service_account_id" {
   description = "Service account ID"
-  value       = yandex_iam_service_account.functions_sa.id
+  value       = data.yandex_iam_service_account.functions_sa.id
 }

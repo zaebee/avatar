@@ -1,1 +1,3 @@
 .worktrees
+.terraform
+.terraform.lock.hcl

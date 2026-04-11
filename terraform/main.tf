@@ -14,7 +14,7 @@ provider "yandex" {
 }
 
 data "yandex_iam_service_account" "functions_sa" {
-  id = "ajeila5562o058l0q4eq"
+  name = "asi-one-functions"
 }
 
 resource "yandex_iam_service_account_static_access_key" "functions_sa_key" {
