@@ -1,5 +1,3 @@
-# Cloud Function: IMAP-poller
-
 resource "yandex_function" "imap_poller" {
   name        = "asi-one-imap-poller"
   description = "IMAP poller for asi:one InstagramPoster"
@@ -14,10 +12,10 @@ resource "yandex_function" "imap_poller" {
   service_account_id = yandex_iam_service_account.functions_sa.id
   
   environment = {
-    IMAP_HOST    = "imap.yandex.ru"
-    S3_BUCKET    = yandex_storage_bucket.photos.bucket
-    S3_ENDPOINT  = "https://storage.yandexcloud.net"
-    MQ_QUEUE     = yandex_message_queue.instagram_posts.name
+    IMAP_HOST   = "imap.yandex.ru"
+    S3_BUCKET  = yandex_storage_bucket.photos.bucket
+    S3_ENDPOINT = "https://storage.yandexcloud.net"
+    MQ_QUEUE   = yandex_message_queue.instagram_posts.name
   }
   
   secrets = [
@@ -39,7 +37,6 @@ resource "yandex_function" "imap_poller" {
   ]
 }
 
-# Trigger: Cloud Scheduler каждые 5 минут
 resource "yandex_function_trigger" "scheduler" {
   name        = "asi-one-scheduler"
   description = "Trigger every 5 minutes for IMAP poller"
@@ -51,7 +48,6 @@ resource "yandex_function_trigger" "scheduler" {
   }
 }
 
-# Cloud Function: asi:one worker (MQ Trigger)
 resource "yandex_function" "asi_one_worker" {
   name        = "asi-one-worker"
   description = "asi:one worker for Instagram posting"
@@ -83,14 +79,13 @@ resource "yandex_function" "asi_one_worker" {
   ]
 }
 
-# MQ Trigger для asi:one worker
 resource "yandex_function_trigger" "mq_trigger" {
   name        = "asi-one-mq-trigger"
   description = "Trigger on new queue messages"
   
   message_queue {
-    queue_id     = yandex_message_queue.instagram_posts.id
-    service_account_id = yandex_iam_service_account.functions_sa.id
+    queue_id             = yandex_message_queue.instagram_posts.id
+    service_account_id  = yandex_iam_service_account.functions_sa.id
   }
   
   function {

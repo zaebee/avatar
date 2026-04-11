@@ -17,12 +17,15 @@ tasks:
         image: docker.io/library/ubuntu:22.04
         script:
           - export PATH="/usr/local/bin:$PATH"
-          - apt-get update && apt-get install -y curl wget git unzip python3
+          - apt-get update && apt-get install -y curl wget git unzip python3 gnupg software-properties-common
           - curl -O https://storage.yandexcloud.net/yandexcloud-yc/release/yc_linux_amd64.tar.gz
           - tar -xzf yc_linux_amd64.tar.gz
           - install yc /usr/local/bin/yc
           - yc version
-          - cd /tmp && curl -Lo terraform.zip https://releases.hashicorp.com/terraform/1.7.5/terraform_1.7.5_linux_amd64.zip && unzip -o terraform.zip && install terraform /usr/local/bin/terraform && terraform version
+          - wget -O - https://apt.releases.hashicorp.com/gpg | gpg --dearmor -o /usr/share/keyrings/hashicorp-archive-keyring.gpg
+          - echo "deb [signed-by=/usr/share/keyrings/hashicorp-archive-keyring.gpg] https://apt.releases.hashicorp.com $(lsb_release -cs) main" | tee /etc/apt/sources.list.d/hashicorp.list > /dev/null
+          - apt-get update && apt-get install -y terraform
+          - terraform version
 
       - name: configure-yc
         script:
@@ -40,8 +43,8 @@ tasks:
 
       - name: terraform-init
         script:
-          - cd terraform && /usr/local/bin/terraform init
+          - cd terraform && terraform init
 
       - name: terraform-apply
         script:
-          - cd terraform && /usr/local/bin/terraform apply -auto-approve -var "token=${YC_TOKEN}" -var "imap_password=${IMAP_PASSWORD}" -var "shared_secret=${SHARED_SECRET}" -var "asi_one_key=${ASI_ONE_KEY}"
+          - cd terraform && terraform apply -auto-approve -var "token=${YC_TOKEN}" -var "imap_password=${IMAP_PASSWORD}" -var "shared_secret=${SHARED_SECRET}" -var "asi_one_key=${ASI_ONE_KEY}"

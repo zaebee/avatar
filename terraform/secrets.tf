@@ -1,7 +1,5 @@
-# Lockbox secrets for credentials
-
 resource "yandex_lockbox_secret" "imap_credentials" {
-  name = "asi-one-imap"
+  name        = "asi-one-imap"
   description = "IMAP credentials for asi:one InstagramPoster"
   
   lifecycle {
@@ -12,16 +10,26 @@ resource "yandex_lockbox_secret" "imap_credentials" {
 resource "yandex_lockbox_secret_version" "imap_credentials" {
   secret_id = yandex_lockbox_secret.imap_credentials.id
   
-  payload = {
-    "imap_host"     = "imap.yandex.ru"
-    "imap_user"     = var.imap_user
-    "imap_password" = var.imap_password
-    "shared_secret" = var.shared_secret
+  entries {
+    key   = "imap_host"
+    text  = "imap.yandex.ru"
+  }
+  entries {
+    key   = "imap_user"
+    text  = var.imap_user
+  }
+  entries {
+    key   = "imap_password"
+    text  = var.imap_password
+  }
+  entries {
+    key   = "shared_secret"
+    text  = var.shared_secret
   }
 }
 
 resource "yandex_lockbox_secret" "asi_one" {
-  name = "asi-one-api"
+  name        = "asi-one-api"
   description = "asi:one API credentials"
   
   lifecycle {
@@ -32,8 +40,12 @@ resource "yandex_lockbox_secret" "asi_one" {
 resource "yandex_lockbox_secret_version" "asi_one" {
   secret_id = yandex_lockbox_secret.asi_one.id
   
-  payload = {
-    "url" = "https://api.asi1.ai/v1/chat/completions"
-    "key" = var.asi_one_key
+  entries {
+    key   = "url"
+    text  = "https://api.asi1.ai/v1/chat/completions"
+  }
+  entries {
+    key   = "key"
+    text  = var.asi_one_key
   }
 }

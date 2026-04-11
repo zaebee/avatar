@@ -15,7 +15,6 @@ provider "yandex" {
   cloud_id  = var.cloud_id
 }
 
-# Object Storage bucket for photos
 resource "yandex_storage_bucket" "photos" {
   bucket = "asi-one-photos"
   acl    = "public-read"
@@ -25,24 +24,21 @@ resource "yandex_storage_bucket" "photos" {
   }
 }
 
-# Yandex Message Queue
 resource "yandex_message_queue" "instagram_posts" {
-  name       = "asi-one-instagram-posts"
-  region     = "ru-central1"
+  name = "asi-one-instagram-posts"
+  region_id = "ru-central1"
   
-  settings {
-    visibility_timeout   = 300
-    receive_wait_time     = 0
-    retry_delays          = [10, 20, 40]
-  }
+  visibility_timeout_seconds = 300
+  receive_wait_time_seconds = 0
+  message_retention_seconds = 345600
   
-  redrive_policy {
-    max_delivery_attempts = 3
-  }
+  redrive_policy = jsonencode({
+    deadLetterTargetArn = yandex_message_queue.instagram_posts_dlq.arn
+    maxReceiveCount = 3
+  })
 }
 
-# Dead Letter Queue
 resource "yandex_message_queue" "instagram_posts_dlq" {
-  name       = "asi-one-instagram-posts-dlq"
-  region     = "ru-central1"
+  name = "asi-one-instagram-posts-dlq"
+  region_id = "ru-central1"
 }
