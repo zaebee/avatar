@@ -177,15 +177,23 @@ def get_unread_emails():
     m = connect()
     m.select('INBOX')
     
-    # Ищем письма с вложениями (непрочитанные)
-    typ, data = m.search(None, 'UNSEEN', 'HASATTACHMENT')
+    # Ищем непрочитанные письма.
+    # HASATTACHMENT — расширение Yandex/Gmail.
+    # Добавляем фильтр по теме для исключения спама.
+    typ, data = m.search(None, 'UNSEEN', 'SUBJECT', '"ASI-POST"', 'HASATTACHMENT')
     
     emails = []
     for num in data[0].split():
         typ, msg_data = m.fetch(num, '(RFC822)')
+        if typ != 'OK':
+            continue
+
         msg = email.message_from_bytes(msg_data[0][1])
-        emails.append(parse_email(msg))
-        # Архивируем после обработки
+        email_data = parse_email(msg)
+        email_data['id'] = num.decode()
+        emails.append(email_data)
+
+        # Помечаем как прочитанное СРАЗУ, чтобы не обрабатывать повторно при сбое
         m.store(num, '+FLAGS', '\\Seen')
     
     m.close()
@@ -242,7 +250,14 @@ def upload_image(image_data: bytes, filename: str) -> str:
         key,
         ExtraArgs={'ContentType': 'image/jpeg'}
     )
-    return f"https://storage.yandex.net/{S3_BUCKET}/{key}"
+
+    # Генерируем Pre-signed URL для Instagram (действует 1 час)
+    url = s3.generate_presigned_url(
+        'get_object',
+        Params={'Bucket': S3_BUCKET, 'Key': key},
+        ExpiresIn=3600
+    )
+    return url
 ```
 
 ### 2.6 queue.py
@@ -332,27 +347,9 @@ asi-one-worker/
 
 ```python
 import json
-import time
 import requests
-from config import MQ_QUEUE, ASI_ONE_URL, ASI_ONE_KEY, INSTAGRAM_ACCOUNT
+from config import ASI_ONE_URL, ASI_ONE_KEY, INSTAGRAM_ACCOUNT
 import logging
-import boto3
-
-sqs = boto3.client('sqs')
-
-def poll_queue():
-    # Получаем сообщение (без удаления)
-    response = sqs.receive_message(QueueUrl=MQ_QUEUE, MaxNumberOfMessages=1)
-    messages = response.get('Messages', [])
-    
-    if not messages:
-        return None
-    
-    msg = messages[0]
-    receipt = msg['ReceiptHandle']
-    body = json.loads(msg['Body'])
-    
-    return receipt, body
 
 def call_asi_one(text: str, images: list) -> dict:
     prompt = f"""Опубликуй пост в Instagram аккаунт {INSTAGRAM_ACCOUNT}.
@@ -375,32 +372,26 @@ def call_asi_one(text: str, images: list) -> dict:
     )
     return response.json()
 
-def delete_from_queue(receipt):
-    sqs.delete_message(QueueUrl=MQ_QUEUE, ReceiptHandle=receipt)
-
 def handler(event, context):
-    while True:
-        result = poll_queue()
-        if not result:
-            time.sleep(60)  # 1 минута
-            continue
-        
-        receipt, body = result
-        
+    # Триггер: Yandex Message Queue
+    for message in event['messages']:
         try:
+            body = json.loads(message['details']['message']['body'])
+
             # Вызов asi:one
             resp = call_asi_one(body['text'], body['images'])
             
-            # Проверяем успех (упрощенно)
+            # Проверяем успех
             if resp.get('choices'):
-                delete_from_queue(receipt)
-                logging.info(f"Posted: {body['text'][:50]}...")
+                logging.info(f"Posted successfully: {body['text'][:50]}...")
             else:
-                logging.warning(f"asi:one failed: {resp}")
+                logging.error(f"asi:one failed: {resp}")
+                raise Exception("Publication failed")
                 
         except Exception as e:
-            logging.error(f"Error processing: {e}")
-            time.sleep(10)
+            logging.error(f"Error processing message: {e}")
+            # Пробрасываем исключение, чтобы триггер не удалял сообщение и сработал retry
+            raise e
     
     return {'statusCode': 200}
 ```
@@ -439,11 +430,31 @@ resource "yandex_storage_bucket" "photos" {
   acl    = "private"
 }
 
-# Message Queue
-resource "yandex_mdb_redis_cluster" "queue" {
-  name     = "asi-one-queue"
-  environment = "PRODUCTION"
-  # Для простоты: используем Yandex Message Queue
+# Service Account for Functions
+resource "yandex_iam_service_account" "sa" {
+  name = "asi-one-sa"
+}
+
+resource "yandex_resourcemanager_folder_iam_member" "sa_roles" {
+  for_each = toset([
+    "storage.editor",
+    "lockbox.payloadViewer",
+    "ymq.reader",
+    "ymq.writer",
+  ])
+  folder_id = var.folder_id
+  member    = "serviceAccount:${yandex_iam_service_account.sa.id}"
+  role      = each.key
+}
+
+# Message Queue (YMQ)
+resource "yandex_message_queue" "queue" {
+  name = "asi-one-queue"
+}
+
+# Static Access Key for boto3 (S3 & YMQ)
+resource "yandex_iam_service_account_static_access_key" "sa_key" {
+  service_account_id = yandex_iam_service_account.sa.id
 }
 ```
 
@@ -476,10 +487,11 @@ resource "yandex_lockbox_secret" "asi_one" {
 ```hcl
 # Cloud Function: IMAP-poller
 resource "yandex_function" "imap_poller" {
-  name        = "asi-one-imap-poller"
-  runtime     = "python312"
-  memory      = 256
-  timeout     = 300
+  name               = "asi-one-imap-poller"
+  runtime            = "python312"
+  memory             = 256
+  timeout            = 300
+  service_account_id = yandex_iam_service_account.sa.id
   
   entrypoint  = "main.handler"
   content     = filebase64("./cloud-function.zip")
@@ -487,7 +499,9 @@ resource "yandex_function" "imap_poller" {
   environment = {
     IMAP_HOST       = "imap.yandex.ru"
     S3_BUCKET       = yandex_storage_bucket.photos.id
-    MQ_QUEUE        = var.mq_queue_url
+    MQ_QUEUE        = yandex_message_queue.queue.id
+    AWS_ACCESS_KEY_ID     = yandex_iam_service_account_static_access_key.sa_key.access_key
+    AWS_SECRET_ACCESS_KEY = yandex_iam_service_account_static_access_key.sa_key.secret_key
   }
   
   secret {
@@ -506,21 +520,40 @@ resource "yandex_function_trigger" "scheduler" {
   
   function {
     id = yandex_function.imap_poller.id
+    service_account_id = yandex_iam_service_account.sa.id
+  }
+}
+
+# Trigger: MQ -> asi:one worker
+resource "yandex_function_trigger" "mq_trigger" {
+  name        = "asi-one-mq-trigger"
+
+  message_queue {
+    queue_id           = yandex_message_queue.queue.arn
+    service_account_id = yandex_iam_service_account.sa.id
+    batch_size         = 1
+    batch_cutoff       = 10
+  }
+
+  function {
+    id = yandex_function.asi_one_worker.id
+    service_account_id = yandex_iam_service_account.sa.id
   }
 }
 
 # Cloud Function: asi:one worker
 resource "yandex_function" "asi_one_worker" {
-  name        = "asi-one-worker"
-  runtime     = "python312"
-  memory      = 512
-  timeout     = 300
+  name               = "asi-one-worker"
+  runtime            = "python312"
+  memory             = 512
+  timeout            = 300
+  service_account_id = yandex_iam_service_account.sa.id
   
   entrypoint  = "main.handler"
   content     = filebase64("./asi-one-worker.zip")
   
   environment = {
-    MQ_QUEUE    = var.mq_queue_url
+    MQ_QUEUE    = yandex_message_queue.queue.id
     INSTAGRAM_ACCOUNT = "@zaebuntu"
   }
   
