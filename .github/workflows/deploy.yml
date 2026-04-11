@@ -43,8 +43,6 @@ jobs:
         run: |
           cd terraform && terraform plan \
             -var "token=${{ secrets.YC_TOKEN }}" \
-            -var "folder_id=${{ secrets.YC_FOLDER_ID }}" \
-            -var "cloud_id=${{ secrets.YC_CLOUD_ID }}" \
             -var "imap_password=${{ secrets.IMAP_PASSWORD }}" \
             -var "shared_secret=${{ secrets.SHARED_SECRET }}" \
             -var "asi_one_key=${{ secrets.ASI_ONE_KEY }}"
@@ -54,8 +52,6 @@ jobs:
         run: |
           cd terraform && terraform apply -auto-approve \
             -var "token=${{ secrets.YC_TOKEN }}" \
-            -var "folder_id=${{ secrets.YC_FOLDER_ID }}" \
-            -var "cloud_id=${{ secrets.YC_CLOUD_ID }}" \
             -var "imap_password=${{ secrets.IMAP_PASSWORD }}" \
             -var "shared_secret=${{ secrets.SHARED_SECRET }}" \
             -var "asi_one_key=${{ secrets.ASI_ONE_KEY }}"

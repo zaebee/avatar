@@ -7,11 +7,13 @@ variable "token" {
 variable "folder_id" {
   description = "Yandex Cloud folder ID"
   type        = string
+  default     = "b1gesh0suso3pvjrro56"
 }
 
 variable "cloud_id" {
   description = "Yandex Cloud cloud ID"
   type        = string
+  default     = "b1gbmfuuno217asel61v"
 }
 
 variable "imap_user" {
