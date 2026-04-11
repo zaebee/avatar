@@ -15,7 +15,8 @@ resource "yandex_function_trigger" "scheduler" {
   }
   
   function {
-    id = data.yandex_function.imap_poller.id
+    id                = data.yandex_function.imap_poller.id
+    service_account_id = "ajeila5562o058l0q4eq"
   }
 }
 
@@ -30,6 +31,7 @@ resource "yandex_function_trigger" "mq_trigger" {
   }
   
   function {
-    id = data.yandex_function.asi_one_worker.id
+    id                = data.yandex_function.asi_one_worker.id
+    service_account_id = "ajeila5562o058l0q4eq"
   }
 }
