@@ -17,14 +17,6 @@ data "yandex_iam_service_account" "functions_sa" {
   name = "asi-one-functions"
 }
 
-data "yandex_storage_bucket" "photos" {
-  bucket = "asi-one-photos"
-}
-
-data "yandex_message_queue" "instagram_posts" {
-  name = "asi-one-instagram-posts"
-}
-
 resource "yandex_iam_service_account_static_access_key" "functions_sa_key" {
   service_account_id = data.yandex_iam_service_account.functions_sa.id
   description        = "Static access key for asi:one functions"
