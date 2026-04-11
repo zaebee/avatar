@@ -1,3 +1,26 @@
+resource "yandex_function" "imap_poller" {
+  name        = "asi-one-imap-poller"
+  description = "IMAP poller for asi:one InstagramPoster"
+  runtime     = "python312"
+  memory      = 256
+  user_hash   = "v1"
+  
+  entrypoint  = "main.handler"
+  
+  content {
+    filename = "imap-worker.zip"
+  }
+  
+  service_account_id = "ajeila5562o058l0q4eq"
+  
+  environment = {
+    IMAP_HOST      = "imap.yandex.ru"
+    S3_BUCKET    = "asi-one-photos"
+    S3_ENDPOINT   = "https://storage.yandexcloud.net"
+    MQ_QUEUE     = "asi-one-instagram-posts"
+  }
+}
+
 resource "yandex_function_trigger" "scheduler" {
   name        = "asi-one-scheduler"
   description = "Trigger every 5 minutes for IMAP poller"
@@ -7,7 +30,7 @@ resource "yandex_function_trigger" "scheduler" {
   }
   
   function {
-    id = "dj60000000k31nek0116"
+    id = yandex_function.imap_poller.id
   }
 }
 
