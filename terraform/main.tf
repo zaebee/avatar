@@ -8,11 +8,7 @@ terraform {
   }
 }
 
-provider "yandex" {
-  token = var.token
-  folder_id = var.folder_id
-  cloud_id = var.cloud_id
-}
+provider "yandex" {}
 
 resource "yandex_storage_bucket" "photos" {
   bucket = "asi-one-photos"
