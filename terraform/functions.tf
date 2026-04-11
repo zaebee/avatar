@@ -1,24 +1,9 @@
-resource "yandex_function" "imap_poller" {
-  name        = "asi-one-imap-poller"
-  description = "IMAP poller for asi:one InstagramPoster"
-  runtime     = "python312"
-  memory      = 256
-  user_hash   = "v1"
-  
-  entrypoint  = "main.handler"
-  
-  content {
-    zip_filename = "imap-worker.zip"
-  }
-  
-  service_account_id = "ajeila5562o058l0q4eq"
-  
-  environment = {
-    IMAP_HOST      = "imap.yandex.ru"
-    S3_BUCKET    = "asi-one-photos"
-    S3_ENDPOINT   = "https://storage.yandexcloud.net"
-    MQ_QUEUE     = "asi-one-instagram-posts"
-  }
+data "yandex_function" "imap_poller" {
+  name = "asi-one-imap-poller"
+}
+
+data "yandex_function" "asi_one_worker" {
+  name = "asi-one-worker"
 }
 
 resource "yandex_function_trigger" "scheduler" {
@@ -30,7 +15,7 @@ resource "yandex_function_trigger" "scheduler" {
   }
   
   function {
-    id = yandex_function.imap_poller.id
+    id = data.yandex_function.imap_poller.id
   }
 }
 
@@ -45,6 +30,6 @@ resource "yandex_function_trigger" "mq_trigger" {
   }
   
   function {
-    id = "d4epo4b8v2dmbpt4jp96"
+    id = data.yandex_function.asi_one_worker.id
   }
 }
