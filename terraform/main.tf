@@ -22,12 +22,6 @@ resource "yandex_iam_service_account_static_access_key" "functions_sa_key" {
   description        = "Static access key for asi:one functions"
 }
 
-resource "yandex_resourcemanager_folder_iam_member" "functions_sa_editor" {
-  folder_id = "b1gesh0suso3pvjrro56"
-  role     = "editor"
-  member   = "serviceAccount:${data.yandex_iam_service_account.functions_sa.id}"
-}
-
 resource "yandex_storage_bucket" "photos" {
   bucket     = "asi-one-photos"
   access_key = yandex_iam_service_account_static_access_key.functions_sa_key.access_key
