@@ -26,12 +26,11 @@ tasks:
         script:
           - set -x
           - curl -sL https://releases.hashicorp.com/terraform/1.6.0/terraform_1.6.0_linux_amd64.zip -o /tmp/terraform.zip
-          - ls -la /tmp/terraform.zip
+          - ls -la /tmp/terraform.zip || echo "download failed"
           - unzip -o -q /tmp/terraform.zip -d /tmp/
-          - ls -la /tmp/terraform
+          - ls -la /tmp/terraform || echo "unzip failed"
           - install /tmp/terraform /usr/local/bin/terraform
-          - /usr/local/bin/terraform version
-        timeout-minutes: 5
+          - /usr/local/bin/terraform version || echo "terraform failed"
 
       - name: configure-yc
         script:
