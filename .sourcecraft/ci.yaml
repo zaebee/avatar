@@ -25,8 +25,8 @@ tasks:
       - name: setup-terraform
         script:
           - wget -q https://releases.hashicorp.com/terraform/1.6.0/terraform_1.6.0_linux_amd64.zip -O /tmp/terraform.zip
-          - unzip -q /tmp/terraform.zip -d /usr/local/bin/
-          - terraform version
+          - unzip -o -q /tmp/terraform.zip -d /usr/local/bin/
+          - /usr/local/bin/terraform version
 
       - name: configure-yc
         script:
@@ -44,8 +44,8 @@ tasks:
 
       - name: terraform-init
         script:
-          - cd terraform && terraform init
+          - cd terraform && /usr/local/bin/terraform init
 
       - name: terraform-apply
         script:
-          - cd terraform && terraform apply -auto-approve -var "token=${YC_TOKEN}" -var "imap_password=${IMAP_PASSWORD}" -var "shared_secret=${SHARED_SECRET}" -var "asi_one_key=${ASI_ONE_KEY}"
+          - cd terraform && /usr/local/bin/terraform apply -auto-approve -var "token=${YC_TOKEN}" -var "imap_password=${IMAP_PASSWORD}" -var "shared_secret=${SHARED_SECRET}" -var "asi_one_key=${ASI_ONE_KEY}"
