@@ -17,7 +17,7 @@ tasks:
         image: docker.io/library/ubuntu:22.04
         script:
           - export PATH="/usr/local/bin:$PATH"
-          - apt-get update && apt-get install -y curl wget git unzip python3
+          - apt-get update && apt-get install -y curl wget git unzip python3 zip
           - curl -O https://storage.yandexcloud.net/yandexcloud-yc/release/yc_linux_amd64.tar.gz
           - tar -xzf yc_linux_amd64.tar.gz
           - install yc /usr/local/bin/yc
