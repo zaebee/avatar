@@ -1,51 +1,36 @@
-resource "yandex_lockbox_secret" "imap_credentials" {
-  name        = "asi-one-imap"
-  description = "IMAP credentials for asi:one InstagramPoster"
-  
-  lifecycle {
-    prevent_destroy = true
-  }
+variable "imap_host" {
+  description = "IMAP host"
+  type        = string
+  default     = "imap.yandex.ru"
+  sensitive   = false
 }
 
-resource "yandex_lockbox_secret_version" "imap_credentials" {
-  secret_id = yandex_lockbox_secret.imap_credentials.id
-  
-  entries {
-    key   = "imap_host"
-    value = "imap.yandex.ru"
-  }
-  entries {
-    key   = "imap_user"
-    value = var.imap_user
-  }
-  entries {
-    key   = "imap_password"
-    value = var.imap_password
-  }
-  entries {
-    key   = "shared_secret"
-    value = var.shared_secret
-  }
+variable "imap_user" {
+  description = "IMAP user email"
+  type        = string
+  default     = "asione@chronicles.website.yandexcloud.net"
 }
 
-resource "yandex_lockbox_secret" "asi_one" {
-  name        = "asi-one-api"
-  description = "asi:one API credentials"
-  
-  lifecycle {
-    prevent_destroy = true
-  }
+variable "imap_password" {
+  description = "IMAP password"
+  type        = string
+  sensitive   = true
 }
 
-resource "yandex_lockbox_secret_version" "asi_one" {
-  secret_id = yandex_lockbox_secret.asi_one.id
-  
-  entries {
-    key   = "url"
-    value = "https://api.asi1.ai/v1/chat/completions"
-  }
-  entries {
-    key   = "key"
-    value = var.asi_one_key
-  }
+variable "shared_secret" {
+  description = "Shared secret for encryption"
+  type        = string
+  sensitive   = true
+}
+
+variable "asi_one_url" {
+  description = "asi:one API URL"
+  type        = string
+  default     = "https://api.asi1.ai/v1/chat/completions"
+}
+
+variable "asi_one_key" {
+  description = "asi:one API key"
+  type        = string
+  sensitive   = true
 }

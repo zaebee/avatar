@@ -14,10 +14,13 @@ resource "yandex_function" "imap_poller" {
   service_account_id = yandex_iam_service_account.functions_sa.id
   
   environment = {
-    IMAP_HOST   = "imap.yandex.ru"
-    S3_BUCKET  = yandex_storage_bucket.photos.bucket
-    S3_ENDPOINT = "https://storage.yandexcloud.net"
-    MQ_QUEUE   = yandex_message_queue.instagram_posts.name
+    IMAP_HOST      = "imap.yandex.ru"
+    IMAP_USER     = var.imap_user
+    IMAP_PASSWORD = var.imap_password
+    SHARED_SECRET = var.shared_secret
+    S3_BUCKET    = yandex_storage_bucket.photos.bucket
+    S3_ENDPOINT   = "https://storage.yandexcloud.net"
+    MQ_QUEUE     = yandex_message_queue.instagram_posts.name
   }
   
   depends_on = [
@@ -55,8 +58,10 @@ resource "yandex_function" "asi_one_worker" {
   service_account_id = yandex_iam_service_account.functions_sa.id
   
   environment = {
-    MQ_QUEUE           = yandex_message_queue.instagram_posts.name
-    INSTAGRAM_ACCOUNT = "@zaebuntu"
+    MQ_QUEUE            = yandex_message_queue.instagram_posts.name
+    INSTAGRAM_ACCOUNT  = "@zaebuntu"
+    ASI_ONE_URL       = var.asi_one_url
+    ASI_ONE_KEY      = var.asi_one_key
   }
   
   depends_on = [

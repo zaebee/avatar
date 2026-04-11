@@ -34,6 +34,12 @@ variable "shared_secret" {
   sensitive   = true
 }
 
+variable "asi_one_url" {
+  description = "asi:one API URL"
+  type        = string
+  default     = "https://api.asi1.ai/v1/chat/completions"
+}
+
 variable "asi_one_key" {
   description = "asi:one API key"
   type        = string
