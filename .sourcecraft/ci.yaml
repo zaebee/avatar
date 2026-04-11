@@ -17,14 +17,17 @@ tasks:
         image: docker.io/library/ubuntu:22.04
         script:
           - export PATH="/usr/local/bin:$PATH"
+          - echo "YC_TOKEN set: ${YC_TOKEN:+yes}"
+          - echo "YC_FOLDER_ID: ${YC_FOLDER_ID}"
+          - echo "YC_CLOUD_ID: ${YC_CLOUD_ID}"
           - apt-get update && apt-get install -y curl wget git unzip python3
           - curl -O https://storage.yandexcloud.net/yandexcloud-yc/release/yc_linux_amd64.tar.gz
           - tar -xzf yc_linux_amd64.tar.gz
           - install yc /usr/local/bin/yc
           - yc version
-          - yc config set --token ${YC_TOKEN}
-          - yc config set --folder-id ${YC_FOLDER_ID}
-          - yc config set --cloud-id ${YC_CLOUD_ID}
+          - 'yc config set --token "${YC_TOKEN}"'
+          - 'yc config set --folder-id "${YC_FOLDER_ID}"'
+          - 'yc config set --cloud-id "${YC_CLOUD_ID}"'
           - yc config list
           - wget -q -O /tmp/terraform.zip https://mirror.selectel.ru/3rd-party/hashicorp-releases/terraform/1.7.5/terraform_1.7.5_linux_amd64.zip || wget -q -O /tmp/terraform.zip https://releases.hashicorp.com/terraform/1.7.5/terraform_1.7.5_linux_amd64.zip
           - unzip -o /tmp/terraform.zip -d /tmp
