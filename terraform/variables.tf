@@ -27,7 +27,6 @@ variable "imap_password" {
   description = "IMAP password"
   type        = string
   sensitive   = true
-  default     = "ljfp-cfkv-hhfj-cjim"
 }
 
 variable "shared_secret" {
