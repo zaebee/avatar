@@ -24,9 +24,14 @@ tasks:
 
       - name: setup-terraform
         script:
-          - wget -q https://releases.hashicorp.com/terraform/1.6.0/terraform_1.6.0_linux_amd64.zip -O /tmp/terraform.zip
-          - unzip -o -q /tmp/terraform.zip -d /usr/local/bin/
+          - set -x
+          - curl -sL https://releases.hashicorp.com/terraform/1.6.0/terraform_1.6.0_linux_amd64.zip -o /tmp/terraform.zip
+          - ls -la /tmp/terraform.zip
+          - unzip -o -q /tmp/terraform.zip -d /tmp/
+          - ls -la /tmp/terraform
+          - install /tmp/terraform /usr/local/bin/terraform
           - /usr/local/bin/terraform version
+        timeout-minutes: 5
 
       - name: configure-yc
         script:
