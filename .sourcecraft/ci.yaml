@@ -20,13 +20,15 @@ tasks:
           - apt-get update && apt-get install -y curl wget git unzip python3 zip
           - git clone https://github.com/zaebee/avatar.git /app
           - |
-            if [ -n "$YC_SERVICE_ACCOUNT_KEY" ]; then
-              echo "$YC_SERVICE_ACCOUNT_KEY" | base64 -d > /app/authorized_key.json
-              echo "File created, size: $(wc -c < /app/authorized_key.json)"
+            KEY="$YC_SERVICE_ACCOUNT_KEY"
+            if [ -n "$KEY" ]; then
+              KEY_CLEAN=$(echo "$KEY" | tr -d '\n' | base64 -d)
+              echo "$KEY_CLEAN" > /app/authorized_key.json
+              echo "File created"
+              head -c 50 /app/authorized_key.json
             else
               echo "SECRET NOT SET"
             fi
-          - 'cat /app/authorized_key.json 2>/dev/null | head -c 200'
           - |
             cat > /root/.terraformrc << 'ENDOFFILE'
             provider_installation {
