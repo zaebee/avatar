@@ -46,15 +46,3 @@ variable "asi_one_key" {
   type        = string
   sensitive   = true
 }
-
-variable "service_account_key" {
-  description = "Service account access key for state storage"
-  type        = string
-  sensitive   = true
-}
-
-variable "service_account_secret" {
-  description = "Service account secret key for state storage"
-  type        = string
-  sensitive   = true
-}
