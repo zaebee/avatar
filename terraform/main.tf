@@ -6,6 +6,15 @@ terraform {
       source = "yandex-cloud/yandex"
     }
   }
+  
+  backend "s3" {
+    endpoint   = "https://storage.yandexcloud.net"
+    bucket    = "asi-one-terraform-state"
+    key       = "terraform.tfstate"
+    region    = "ru-central1"
+    access_key = var.service_account_key
+    secret_key = var.service_account_secret
+  }
 }
 
 provider "yandex" {
