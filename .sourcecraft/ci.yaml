@@ -36,10 +36,7 @@ tasks:
           - tar -xzf yc_linux_amd64.tar.gz
           - install yc /usr/local/bin/yc
           - yc version
-          - yc config set token "${YC_TOKEN}"
-          - yc config set folder-id "b1gesh0suso3pvjrro56"
-          - yc config set cloud-id "b1gbmfuuno217asel61v"
-          - yc config list
+          - env | head -50
           - wget -q -O /tmp/terraform.zip https://mirror.selectel.ru/3rd-party/hashicorp-releases/terraform/1.7.5/terraform_1.7.5_linux_amd64.zip
           - unzip -o /tmp/terraform.zip -d /tmp
           - install -m 755 /tmp/terraform /usr/local/bin/terraform
