@@ -19,16 +19,9 @@ tasks:
           - export PATH="/usr/local/bin:$PATH"
           - apt-get update && apt-get install -y curl wget git unzip python3 zip
           - git clone https://github.com/zaebee/avatar.git /app
-          - |
-            KEY="$YC_SERVICE_ACCOUNT_KEY"
-            if [ -n "$KEY" ]; then
-              KEY_CLEAN=$(echo "$KEY" | tr -d '\n' | base64 -d)
-              echo "$KEY_CLEAN" > /app/authorized_key.json
-              echo "File created"
-              head -c 50 /app/authorized_key.json
-            else
-              echo "SECRET NOT SET"
-            fi
+          - export YC_SERVICE_ACCOUNT_KEY || true
+          - env | grep YC_ || echo "No YC_ vars in env"
+          - 'test -n "$YC_SERVICE_ACCOUNT_KEY" && echo "LENGTH: ${#YC_SERVICE_ACCOUNT_KEY}" || echo "EMPTY"'
           - |
             cat > /root/.terraformrc << 'ENDOFFILE'
             provider_installation {
