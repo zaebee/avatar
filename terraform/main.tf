@@ -32,7 +32,7 @@ resource "yandex_storage_bucket" "photos" {
   }
   
   lifecycle {
-    ignore_changes = [tags]
+    ignore_changes = [all]
   }
 }
 

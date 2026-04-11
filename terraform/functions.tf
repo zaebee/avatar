@@ -23,10 +23,9 @@ resource "yandex_function" "imap_poller" {
     MQ_QUEUE     = yandex_message_queue.instagram_posts.name
   }
   
-  depends_on = [
-    yandex_message_queue.instagram_posts,
-    yandex_storage_bucket.photos
-  ]
+  lifecycle {
+    ignore_changes = [content, environment]
+  }
 }
 
 resource "yandex_function_trigger" "scheduler" {
@@ -64,9 +63,9 @@ resource "yandex_function" "asi_one_worker" {
     ASI_ONE_KEY      = var.asi_one_key
   }
   
-  depends_on = [
-    yandex_message_queue.instagram_posts
-  ]
+  lifecycle {
+    ignore_changes = [content, environment]
+  }
 }
 
 resource "yandex_function_trigger" "mq_trigger" {
@@ -81,5 +80,9 @@ resource "yandex_function_trigger" "mq_trigger" {
   
   function {
     id = yandex_function.asi_one_worker.id
+  }
+  
+  lifecycle {
+    ignore_changes = [message_queue, function]
   }
 }
