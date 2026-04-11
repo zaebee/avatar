@@ -13,21 +13,19 @@ provider "yandex" {
   folder_id = "b1gesh0suso3pvjrro56"
 }
 
-resource "yandex_iam_service_account" "functions_sa" {
-  name        = "asi-one-functions"
-  description = "Service account for asi:one InstagramPoster functions"
-  folder_id   = "b1gesh0suso3pvjrro56"
+data "yandex_iam_service_account" "functions_sa" {
+  id = "ajeila5562o058l0q4eq"
 }
 
 resource "yandex_iam_service_account_static_access_key" "functions_sa_key" {
-  service_account_id = yandex_iam_service_account.functions_sa.id
+  service_account_id = data.yandex_iam_service_account.functions_sa.id
   description        = "Static access key for asi:one functions"
 }
 
 resource "yandex_resourcemanager_folder_iam_member" "functions_sa_editor" {
   folder_id = "b1gesh0suso3pvjrro56"
   role     = "editor"
-  member   = "serviceAccount:${yandex_iam_service_account.functions_sa.id}"
+  member   = "serviceAccount:${data.yandex_iam_service_account.functions_sa.id}"
 }
 
 resource "yandex_storage_bucket" "photos" {

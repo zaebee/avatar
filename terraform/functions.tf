@@ -11,7 +11,7 @@ resource "yandex_function" "imap_poller" {
     zip_filename = "imap-worker.zip"
   }
   
-  service_account_id = yandex_iam_service_account.functions_sa.id
+  service_account_id = data.yandex_iam_service_account.functions_sa.id
   
   environment = {
     IMAP_HOST      = "imap.yandex.ru"
@@ -55,7 +55,7 @@ resource "yandex_function" "asi_one_worker" {
     zip_filename = "worker.zip"
   }
   
-  service_account_id = yandex_iam_service_account.functions_sa.id
+  service_account_id = data.yandex_iam_service_account.functions_sa.id
   
   environment = {
     MQ_QUEUE            = yandex_message_queue.instagram_posts.name
@@ -75,7 +75,7 @@ resource "yandex_function_trigger" "mq_trigger" {
   
   message_queue {
     queue_id             = yandex_message_queue.instagram_posts.id
-    service_account_id  = yandex_iam_service_account.functions_sa.id
+    service_account_id  = data.yandex_iam_service_account.functions_sa.id
     batch_cutoff         = 0
   }
   
