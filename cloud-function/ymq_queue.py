@@ -43,24 +43,17 @@ def publish_to_queue(payload: dict) -> bool:
         # SQS-compatible endpoint format
         queue_url = f"https://message-queue.api.cloud.yandex.net/{FOLDER_ID}/{MQ_QUEUE}"
         
-        # Build SQS-compatible request
+        # Build SQS-compatible request - use URL query params instead
         message_body = json.dumps(payload)
-        message_body_encoded = base64.b64encode(message_body.encode()).decode()
         
-        # Use SQS-compatible API with IAM token
-        url = f"{queue_url}/"
-        
-        data = {
-            'Action': 'SendMessage',
-            'Version': '2012-11-05',
-            'MessageBody': message_body_encoded
-        }
+        # SendMessage action as query parameter
+        url = f"{queue_url}/?Action=SendMessage&Version=2012-11-05"
         
         response = requests.post(
             url,
-            data=data,
+            data=message_body,
             headers={
-                'Content-Type': 'application/x-www-form-urlencoded',
+                'Content-Type': 'application/json',
                 'Authorization': f'Bearer {iam_token}'
             },
             timeout=10
