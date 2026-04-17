@@ -2,31 +2,68 @@ import json
 import os
 import logging
 import requests
-import hashlib
-import hmac
-import base64
-from datetime import datetime
+import time
 
 MQ_QUEUE = os.environ.get('MQ_QUEUE', 'asi-one-instagram-posts')
 FOLDER_ID = "b1gesh0suso3pvjrro56"
-REGION = "ru-central1"
 
 logger = logging.getLogger(__name__)
 
+SA_KEY_JSON = os.environ.get('SA_KEY_JSON', '')
+
 
 def get_iam_token():
-    """Get IAM token from metadata service"""
+    """Get IAM token from metadata or SA key."""
+    # First try metadata service
     try:
         response = requests.get(
             'http://169.254.169.254/metadata/v1/iam_token',
             headers={'Metadata-Flavor': 'Google'},
-            timeout=5
+            timeout=3
         )
-        data = response.json()
-        return data.get('access_token', '')
+        if response.status_code == 200:
+            try:
+                data = response.json()
+                return data.get('access_token', '')
+            except:
+                pass
     except Exception as e:
-        logger.error(f"Failed to get IAM token: {e}")
-        return ''
+        logger.debug(f"Metadata: {e}")
+    
+    # Try using SA key from environment
+    if SA_KEY_JSON:
+        try:
+            import jwt
+            import base64
+            
+            sa_key = json.loads(SA_KEY_JSON)
+            private_key = sa_key.get('private_key', '')
+            
+            if private_key:
+                now = int(time.time())
+                token_payload = {
+                    "iss": sa_key.get('service_account_id'),
+                    "sub": sa_key.get('service_account_id'),
+                    "aud": "https://iam.api.cloud.yandex.net/iam/v1/tokens",
+                    "iat": now,
+                    "exp": now + 3600
+                }
+                
+                jwt_token = jwt.encode(token_payload, private_key, algorithm="RS256")
+                
+                resp = requests.post(
+                    "https://iam.api.cloud.yandex.net/iam/v1/tokens",
+                    json={"jwt": jwt_token},
+                    timeout=10
+                )
+                
+                if resp.status_code == 200:
+                    return resp.json().get('iamToken', '')
+                    
+        except Exception as e:
+            logger.error(f"SA key failed: {e}")
+    
+    return ''
 
 
 def publish_to_queue(payload: dict) -> bool:

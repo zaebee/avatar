@@ -1,21 +1,15 @@
 import json
 import logging
 import base64
-import os
-
-logging.basicConfig(level=logging.DEBUG)
-logger = logging.getLogger(__name__)
 
 from imap_client import get_unread_emails
 from decryptor import decrypt
 from storage import upload_image
-from ymq_queue import publish_to_queue
+from queue import publish_to_queue
 from config import SECRET
 
-# Override SECRET to avoid error when not set
-if not SECRET:
-    logger.warning("SHARED_SECRET not set - using debug mode")
-    SECRET = "debug-secret"
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 
 def handler(event, context):
@@ -23,13 +17,12 @@ def handler(event, context):
     Cloud Function handler для IMAP-poller.
     Триггер: Cloud Scheduler каждые 5 минут.
     """
-    logger.info("=== IMAP POLLER STARTED ===")
+    logger.info("Starting IMAP poller")
     
     if not SECRET:
         logger.error("SHARED_SECRET not configured")
         return {'statusCode': 500, 'body': 'Shared secret not configured'}
 
-    logger.info("Fetching emails...")
     emails = get_unread_emails()
     logger.info(f"Found {len(emails)} emails to process")
     
@@ -37,22 +30,18 @@ def handler(event, context):
     failed = 0
     
     for email_data in emails:
-        logger.info(f"Processing email: {email_data.get('id', 'unknown')}")
         try:
             if not email_data.get('body'):
                 logger.warning(f"Email {email_data.get('id')} has no body, skipping")
                 continue
             
-            logger.info("Decrypting email body...")
             payload = decrypt(email_data['body'], SECRET)
-            logger.info(f"Payload decrypted: {payload.get('text', '')[:50]}...")
             
             image_urls = []
             for idx, img_data in enumerate(payload.get('images', [])):
                 try:
                     img_bytes = base64.b64decode(img_data)
                     filename = f"{email_data.get('id', 'unknown')}_{idx}.jpg"
-                    logger.info(f"Uploading image {idx}...")
                     url = upload_image(img_bytes, filename)
                     image_urls.append(url)
                 except Exception as e:
@@ -65,7 +54,6 @@ def handler(event, context):
                 'from': email_data.get('from', '')
             }
             
-            logger.info("Publishing to queue...")
             if publish_to_queue(queue_payload):
                 logger.info(f"Queued post: {queue_payload['text'][:50]}...")
                 processed += 1
@@ -78,7 +66,6 @@ def handler(event, context):
             failed += 1
     
     logger.info(f"Processed: {processed}, Failed: {failed}")
-    logger.info("=== IMAP POLLER DONE ===")
     
     return {
         'statusCode': 200,
