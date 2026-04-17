@@ -20,7 +20,7 @@ variable "cloud_id" {
 variable "imap_user" {
   description = "IMAP user email"
   type        = string
-  default     = "asione@anokto.idp.yandexcloud.net"
+  default     = "neirozae@yandex.com"
 }
 
 variable "imap_password" {
