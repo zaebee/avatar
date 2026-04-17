@@ -5,7 +5,7 @@ import base64
 from imap_client import get_unread_emails
 from decryptor import decrypt
 from storage import upload_image
-from queue import publish_to_queue
+from ymq_queue import publish_to_queue
 from config import SECRET
 
 logging.basicConfig(level=logging.INFO)
