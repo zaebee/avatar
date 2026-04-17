@@ -1,41 +1,78 @@
 import json
 import os
 import logging
+import requests
 import hashlib
 import hmac
 import base64
-import time
 from datetime import datetime
 
-MQ_QUEUE = os.environ.get('MQ_QUEUE', '')
+MQ_QUEUE = os.environ.get('MQ_QUEUE', 'asone-post-queue')
+FOLDER_ID = "b1gesh0suso3pvjrro56"
+REGION = "ru-central1"
 
 logger = logging.getLogger(__name__)
 
 
+def get_iam_token():
+    """Get IAM token from metadata service"""
+    try:
+        response = requests.get(
+            'http://169.254.169.254/metadata/v1/iam_token',
+            headers={'Metadata-Flavor': 'Google'},
+            timeout=5
+        )
+        data = response.json()
+        return data.get('access_token', '')
+    except Exception as e:
+        logger.error(f"Failed to get IAM token: {e}")
+        return ''
+
+
 def publish_to_queue(payload: dict) -> bool:
     """
-    Публикация сообщения в очередь Yandex MQ через REST API.
+    Publish to YMQ using HTTP API with IAM token.
+    YMQ uses SQS-compatible API format.
     """
     try:
-        import requests
+        iam_token = get_iam_token()
+        if not iam_token:
+            logger.error("No IAM token available - cannot publish to queue")
+            return False
+
+        # SQS-compatible endpoint format
+        queue_url = f"https://message-queue.api.cloud.yandex.net/{FOLDER_ID}/{MQ_QUEUE}"
         
-        # YMQ uses AWS SQS-compatible API
-        queue_url = f"https://message-queue.api.cloud.yandex.net/dj60000000k31nv501om/{MQ_QUEUE}"
+        # Build SQS-compatible request
+        message_body = json.dumps(payload)
+        message_body_encoded = base64.b64encode(message_body.encode()).decode()
         
-        # For now, just log - need to implement proper auth
-        logger.info(f"Would publish to queue: {queue_url}")
-        logger.info(f"Payload: {payload}")
+        # Use SQS-compatible API with IAM token
+        url = f"{queue_url}/"
         
-        # Placeholder - need to implement proper YMQ publishing
-        # YMQ requires AWS Signature v4
-        logger.warning("Queue publishing not implemented - using placeholder")
-        return True
+        data = {
+            'Action': 'SendMessage',
+            'Version': '2012-11-05',
+            'MessageBody': message_body_encoded
+        }
+        
+        response = requests.post(
+            url,
+            data=data,
+            headers={
+                'Content-Type': 'application/x-www-form-urlencoded',
+                'Authorization': f'Bearer {iam_token}'
+            },
+            timeout=10
+        )
+        
+        if response.status_code == 200:
+            logger.info("Published to queue via IAM")
+            return True
+        
+        logger.warning(f"Queue publish failed: {response.status_code} - {response.text[:200]}")
+        return False
         
     except Exception as e:
-        logger.error(f"Failed to publish to queue: {e}")
+        logger.error(f"Failed to publish: {e}")
         return False
-
-
-def get_queue_url() -> str:
-    """Получение URL очереди по имени."""
-    return f"https://message-queue.api.cloud.yandex.net/dj60000000k31nv501om/{MQ_QUEUE}"
