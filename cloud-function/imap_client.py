@@ -14,12 +14,13 @@ def connect():
 
 
 def get_unread_emails():
-    """Получение непрочитанных писем с вложениями."""
+    """Получение непрочитанных писем."""
     m = connect()
     m.select('INBOX')
 
     try:
-        typ, data = m.search(None, 'UNSEEN', 'HASATTACHMENT')
+        # Simple search - just get all unseen
+        typ, data = m.search(None, 'UNSEEN')
         if typ != 'OK' or not data[0]:
             m.logout()
             return []
@@ -50,6 +51,32 @@ def get_unread_emails():
     return emails
 
 
+def decode_email_payload(payload, encoding=None):
+    """Decode email payload with proper encoding handling."""
+    if not payload:
+        return None
+    if isinstance(payload, str):
+        return payload
+    try:
+        if encoding and encoding.lower() != 'utf-8':
+            return payload.decode(encoding)
+    except:
+        pass
+    try:
+        return payload.decode('utf-8')
+    except:
+        pass
+    try:
+        return payload.decode('latin-1')
+    except:
+        pass
+    try:
+        return payload.decode('cp1251')
+    except:
+        pass
+    return None
+
+
 def parse_email(msg) -> dict:
     """Парсинг email сообщения."""
     result = {
@@ -65,16 +92,20 @@ def parse_email(msg) -> dict:
             content_type = part.get_content_type()
             if content_type == 'text/plain' and not result['body']:
                 try:
+                    charset = part.get_content_charset()
                     payload = part.get_payload(decode=True)
-                    if payload:
-                        result['body'] = payload.decode('utf-8')
+                    decoded = decode_email_payload(payload, charset)
+                    if decoded:
+                        result['body'] = decoded
                 except:
                     pass
     else:
         try:
+            charset = msg.get_content_charset()
             payload = msg.get_payload(decode=True)
-            if payload:
-                result['body'] = payload.decode('utf-8')
+            decoded = decode_email_payload(payload, charset)
+            if decoded:
+                result['body'] = decoded
         except:
             pass
 

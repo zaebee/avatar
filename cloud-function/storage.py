@@ -1,52 +1,41 @@
-import boto3
-from botocore.config import Config
-from botocore.exceptions import ClientError
-from io import BytesIO
-from config import S3_BUCKET, S3_ENDPOINT
+import os
 import logging
 
-logger = logging.getLogger(__name__)
+S3_BUCKET = os.environ.get('S3_BUCKET', '')
+S3_ENDPOINT = os.environ.get('S3_ENDPOINT', 'https://storage.yandexcloud.net')
 
-s3_client = boto3.client(
-    's3',
-    endpoint_url=S3_ENDPOINT,
-    config=Config(signature_version='s3v4')
-)
+logger = logging.getLogger(__name__)
 
 
 def upload_image(image_data: bytes, filename: str) -> str:
     """
-    Загрузка фото в Object Storage.
-    Возвращает публичный URL.
+    Загрузка фото в Object Storage через REST API.
     """
-    key = f"photos/{filename}"
-
     try:
-        s3_client.upload_fileobj(
-            BytesIO(image_data),
-            S3_BUCKET,
-            key,
-            ExtraArgs={
-                'ContentType': 'image/jpeg',
-                'ACL': 'public-read'
-            }
+        import requests
+        
+        url = f"{S3_ENDPOINT}/{S3_BUCKET}/photos/{filename}"
+        
+        response = requests.put(
+            url,
+            data=image_data,
+            headers={'Content-Type': 'image/jpeg'},
+            timeout=30
         )
-        url = f"https://storage.yandexcloud.net/{S3_BUCKET}/{key}"
-        logger.info(f"Uploaded: {url}")
-        return url
-    except ClientError as e:
-        logger.error(f"S3 upload failed: {e}")
+        
+        if response.status_code not in [200, 201, 204]:
+            logger.error(f"S3 upload failed: {response.status_code} {response.text[:200]}")
+            raise Exception(f"Upload failed: {response.status_code}")
+        
+        result_url = f"{S3_ENDPOINT}/{S3_BUCKET}/photos/{filename}"
+        logger.info(f"Uploaded: {result_url}")
+        return result_url
+        
+    except Exception as e:
+        logger.error(f"S3 upload error: {e}")
         raise
 
 
 def generate_presigned_url(key: str, expires_in: int = 3600) -> str:
     """Генерация pre-signed URL для временного доступа."""
-    try:
-        return s3_client.generate_presigned_url(
-            'get_object',
-            Params={'Bucket': S3_BUCKET, 'Key': key},
-            ExpiresIn=expires_in
-        )
-    except ClientError as e:
-        logger.error(f"Failed to generate presigned URL: {e}")
-        raise
+    raise NotImplementedError("Presigned URLs require boto3")

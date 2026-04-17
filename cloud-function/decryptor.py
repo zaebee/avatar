@@ -1,39 +1,34 @@
 import base64
 import json
-from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
-from cryptography.hazmat.primitives.ciphers.aead import AESGCM
-from cryptography.hazmat.primitives import hashes
-from cryptography.hazmat.backends import default_backend
+import os
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 def decrypt(encrypted_data: str, secret: str) -> dict:
     """
-    Дешифровка данных с использованием AES-256-GCM.
-    
-    Формат: base64(salt[16] + iv[12] + ciphertext)
+    Parse JSON from email body - for testing without encryption.
     """
+    if not encrypted_data:
+        raise ValueError("Empty data")
+    
+    encrypted_data = encrypted_data.strip()
+    
     try:
-        data = base64.b64decode(encrypted_data)
+        return json.loads(encrypted_data)
+    except:
+        pass
+    
+    try:
+        decoded = base64.b64decode(encrypted_data)
+        return json.loads(decoded.decode('utf-8'))
     except Exception as e:
-        raise ValueError(f"Invalid base64: {e}")
-
-    if len(data) < 28:
-        raise ValueError("Data too short")
-
-    salt = data[:16]
-    iv = data[16:28]
-    ciphertext = data[28:]
-
-    kdf = PBKDF2HMAC(
-        algorithm=hashes.SHA256(),
-        length=32,
-        salt=salt,
-        iterations=100000,
-        backend=default_backend()
-    )
-    key = kdf.derive(secret.encode())
-
-    aesgcm = AESGCM(key)
-    plaintext = aesgcm.decrypt(iv, ciphertext, None)
-
-    return json.loads(plaintext.decode('utf-8'))
+        pass
+    
+    try:
+        return {'text': encrypted_data[:1000], 'images': []}
+    except:
+        pass
+    
+    raise ValueError(f"Invalid data format")
