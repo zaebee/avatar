@@ -24,7 +24,7 @@ variable "imap_user" {
 }
 
 variable "imap_password" {
-  description = "IMAP password"
+  description = "IMAP password - set via secrets in CI"
   type        = string
   sensitive   = true
 }
