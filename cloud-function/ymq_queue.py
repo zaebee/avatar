@@ -7,7 +7,7 @@ import hmac
 import base64
 from datetime import datetime
 
-MQ_QUEUE = os.environ.get('MQ_QUEUE', 'asone-post-queue')
+MQ_QUEUE = os.environ.get('MQ_QUEUE', 'asi-one-instagram-posts')
 FOLDER_ID = "b1gesh0suso3pvjrro56"
 REGION = "ru-central1"
 
