@@ -2,32 +2,15 @@ import json
 import logging
 import os
 import requests
-from botocore.exceptions import ClientError
-from botocore.config import Config
-
-import boto3
+import base64
+import hmac
+import hashlib
+from datetime import datetime
 
 from config import MQ_QUEUE, INSTAGRAM_ACCOUNT, ASI_ONE_URL, ASI_ONE_KEY
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
-
-sqs = boto3.client(
-    'sqs',
-    endpoint_url='https://message-queue.api.cloud.yandex.net',
-    region_name='ru-central1',
-    config=Config(signature_version='s3v4')
-)
-
-
-def get_queue_url():
-    """Получение URL очереди."""
-    try:
-        response = sqs.get_queue_url(QueueName=MQ_QUEUE)
-        return response['QueueUrl']
-    except ClientError as e:
-        logger.error(f"Failed to get queue URL: {e}")
-        raise
 
 
 def call_asi_one(text: str, images: list) -> dict:
@@ -54,7 +37,15 @@ def call_asi_one(text: str, images: list) -> dict:
                         'type': 'function',
                         'function': {
                             'name': 'instagram_post',
-                            'description': 'Опубликовать пост в Instagram'
+                            'description': 'Опубликовать пост в Instagram',
+                            'parameters': {
+                                'type': 'object',
+                                'properties': {
+                                    'text': {'type': 'string', 'description': 'Текст поста'},
+                                    'images': {'type': 'array', 'description': 'URL изображений'}
+                                },
+                                'required': ['text']
+                            }
                         }
                     }
                 ]
@@ -71,46 +62,48 @@ def call_asi_one(text: str, images: list) -> dict:
         raise
 
 
-def delete_from_queue(receipt_handle: str):
-    """Удаление сообщения из очереди после успешной обработки."""
-    try:
-        sqs.delete_message(
-            QueueUrl=get_queue_url(),
-            ReceiptHandle=receipt_handle
-        )
-        logger.info("Message deleted from queue")
-    except ClientError as e:
-        logger.error(f"Failed to delete message: {e}")
-
-
 def handler(event, context):
     """
     Cloud Function handler для asi:one worker.
     Триггер: Yandex Message Queue Trigger.
     """
-    logger.info("Starting asi:one worker")
+    logger.info(f"Starting asi:one worker with event: {json.dumps(event)[:200]}")
     
     if not ASI_ONE_KEY:
         logger.error("ASI_ONE_KEY not configured")
         return {'statusCode': 500, 'body': 'asi:one key not configured'}
 
+    # YMQ trigger sends messages in event['messages']
     messages = event.get('messages', [])
     
     if not messages:
         logger.info("No messages in event")
         return {'statusCode': 200, 'body': 'No messages'}
     
+    logger.info(f"Received {len(messages)} messages")
+    
     processed = 0
     failed = 0
     
     for msg in messages:
-        receipt_handle = msg.get('receiptHandle', '')
-        
         try:
-            body = json.loads(msg.get('body', '{}'))
+            # YMQ trigger formats message as:
+            # {"messages": [{"body": "...", "receiptHandle": "..."}]}
+            # Or simple body
             
-            text = body.get('text', '')
-            images = body.get('images', [])
+            body = msg.get('body', '{}')
+            
+            # Try to parse body
+            try:
+                if isinstance(body, str):
+                    payload = json.loads(body)
+                else:
+                    payload = body
+            except:
+                payload = {'text': str(body), 'images': []}
+            
+            text = payload.get('text', '')
+            images = payload.get('images', [])
             
             if not text:
                 logger.warning("Empty text, skipping")
@@ -121,7 +114,6 @@ def handler(event, context):
             resp = call_asi_one(text, images)
             
             if resp.get('choices'):
-                delete_from_queue(receipt_handle)
                 logger.info(f"Posted: {text[:50]}...")
                 processed += 1
             else:

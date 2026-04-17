@@ -1,8 +1,5 @@
 import os
-import json
 import logging
-
-from botocore.exceptions import ClientError
 
 MQ_QUEUE = os.environ.get('MQ_QUEUE', '')
 INSTAGRAM_ACCOUNT = os.environ.get('INSTAGRAM_ACCOUNT', '@zaebuntu')
